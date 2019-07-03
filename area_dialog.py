@@ -12,13 +12,13 @@ from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 from .area_div import Ui_AreaDivDialog
 from .base_classes import tr
 
+
 class AreaDialog(QDialog):
     """ Class for area division dialog
     """
+
     def __init__(self, total_area, div_area, rotate):
         """ Initialize dialog data and event handlers
-
-            :param log: log instance for log messages
         """
         super(AreaDialog, self).__init__()
         self.total_area = int(total_area + 0.5)

@@ -19,7 +19,6 @@ class CoordDialog(QDialog):
     def __init__(self, point1, point2):
         """ Initialize dialog data and event handlers
 
-            :param log: log instance for log messages
         """
         super(CoordDialog, self).__init__()
         self.point1 = point1
@@ -44,6 +43,7 @@ class CoordDialog(QDialog):
         self.ui.EndEast.setText('{0:.2f}'.format(self.point2.x()))
         self.ui.EndNorth.setText('{0:.2f}'.format(self.point2.y()))
 
+    # noinspection PyUnusedLocal
     def onContinueButton(self):
         """ Check input and accept dialog
         """

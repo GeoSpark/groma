@@ -10,15 +10,15 @@
 from __future__ import absolute_import
 
 from qgis.PyQt.QtWidgets import QDialog, QMessageBox
-#from PyQt4.QtCore import SIGNAL, QCoreApplication
 
 from .add_new_point import Ui_AddNewPointDialog
-from .base_classes import *
 from .surveying_util import *
+
 
 class NewPointDialog(QDialog):
     """ Class for new point dialog
     """
+
     def __init__(self):
         """ Initialize dialog data and event handlers
         """
@@ -66,17 +66,17 @@ class NewPointDialog(QDialog):
         try:
             e = float(self.ui.EastCoordLineEdit.text().strip())
         except ValueError:
-            msg += ("Please give a valid easting coordinate\n")
+            msg += "Please give a valid easting coordinate\n"
         try:
             n = float(self.ui.NorthCoordLineEdit.text().strip())
         except ValueError:
-            msg += ("Please give a valid northing coordinate\n")
+            msg += "Please give a valid northing coordinate\n"
         w = self.ui.ZCoordLineEdit.text().strip()
         if len(w):
             try:
                 z = float(w)
             except ValueError:
-                msg += ("Please give a valid elevation or clear the field\n")
+                msg += "Please give a valid elevation or clear the field\n"
         else:
             z = None
         w = self.ui.PointCodeLineEdit.text().strip()[0:20]
@@ -93,12 +93,15 @@ class NewPointDialog(QDialog):
             QMessageBox.warning(self, tr("Warning"), msg)
             return
         # check new
-        #p = Point(pnum)
+        # p = Point(pnum)
         if get_coord(pnum) is not None and \
-            QMessageBox.question(self, tr("Warning"), tr("Point is already in the point list. Do you want to overwrite?"), tr("Yes"), tr("No")) == 1:
+                QMessageBox.question(self, tr("Warning"),
+                                     tr("Point is already in the point list. Do you want to overwrite?"), tr("Yes"),
+                                     tr("No")) == 1:
             return
 
+        # noinspection PyUnboundLocalVariable
         p = ScPoint(Point(pnum, e, n, z, pc, pt))
         if not p.store_coord():
-            QMessageBox.warning(self, tr("Warning"), tr("Point is not stored")) 
+            QMessageBox.warning(self, tr("Warning"), tr("Point is not stored"))
         self.reset()

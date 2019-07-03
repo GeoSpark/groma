@@ -7,21 +7,21 @@
 .. moduleauthor: Zoltan Siki <siki@agt.bme.hu>
 """
 from __future__ import absolute_import
+
 import platform
 import webbrowser
-from qgis.PyQt.QtWidgets import QDialog, QMessageBox
-from qgis.PyQt.QtGui import QFont
-from qgis.PyQt.QtCore import QSettings
 
-from . import config
-from .network_calc import Ui_NetworkCalcDialog
-from .base_classes import *
-from .surveying_util import *
+from qgis.PyQt.QtGui import QFont
+from qgis.PyQt.QtWidgets import QDialog, QMessageBox
+
 from .gama_interface import *
+from .network_calc import Ui_NetworkCalcDialog
+
 
 class NetworkDialog(QDialog):
     """ Class for network calculation dialog
     """
+
     def __init__(self, log):
         """ Initialize dialog data and event handlers
 
@@ -51,11 +51,8 @@ class NetworkDialog(QDialog):
         """
         if platform.system() == 'Linux':
             # change font
-            fontname = QSettings().value("SurveyingCalculation/fontname",config.fontname)
-            fontsize = int(QSettings().value("SurveyingCalculation/fontsize",config.fontsize))
-            self.ui.ResultTextBrowser.setFont(QFont(fontname, fontsize))
-        log_path = QSettings().value("SurveyingCalculation/log_path",config.log_path)
-        self.log.set_log_path(log_path)
+            self.ui.ResultTextBrowser.setFont(QFont(config.fontname, int(config.fontsize)))
+        self.log.set_log_path(config.log_path)
         self.reset()
 
     def reset(self):
@@ -167,21 +164,21 @@ class NetworkDialog(QDialog):
                 if lay is None:
                     continue
                 st = None
-                n_ori = 0    # number of orientation directions
-                n_adj = 0    # number of adjusted targets
-                #for feat in lay.getFeatures():
+                n_ori = 0  # number of orientation directions
+                n_adj = 0  # number of adjusted targets
+                # for feat in lay.getFeatures():
                 sorted_features = sorted(lay.getFeatures(), key=lambda x: x["id"])
                 for feat in sorted_features:
                     pid = feat['point_id']
                     if feat['station'] == 'station':
                         if st is not None and dimension in [2, 3]:
                             if (n_ori + n_adj == 0) or \
-                                (st in fix_names and n_adj == 0):
+                                    (st in fix_names and n_adj == 0):
                                 # no adjusted point on known station, remove it
                                 g.remove_last_observation(True)
                         st = None
-                        n_ori = 0    # number of orientation directions
-                        n_adj = 0    # number of adjusted targets
+                        n_ori = 0  # number of orientation directions
+                        n_adj = 0  # number of adjusted targets
                         if pid in fix_names or pid in adj_names:
                             st = pid
                             o = PolarObservation(pid, feat['station'])
@@ -190,25 +187,25 @@ class NetworkDialog(QDialog):
                             g.add_observation(o)
                     else:
                         if st is not None and (pid in fix_names or pid in adj_names):
-                            if dimension in [2, 3] and (type(feat['hz']) is float or \
-                                type(feat['v']) is float and type(feat['sd']) is float) or \
-                                dimension == 1 and type(feat['v']) is float and \
-                                type(feat['sd']) is float:
+                            if dimension in [2, 3] and (type(feat['hz']) is float or
+                                                        type(feat['v']) is float and type(feat['sd']) is float) or \
+                                    dimension == 1 and type(feat['v']) is float and \
+                                    type(feat['sd']) is float:
                                 o = PolarObservation(pid, None)
                                 o.hz = Angle(feat['hz'], 'GON') if type(feat['hz']) is float else None
                                 o.v = Angle(feat['v'], 'GON') if type(feat['v']) is float else None
                                 if type(feat['v']) is float and \
-                                    (st in adj_names or pid in adj_names):
+                                        (st in adj_names or pid in adj_names):
                                     # add zenith if one end is unknown
                                     o.v = Angle(feat['v'], 'GON')
                                 if type(feat['sd']) is float and \
-                                    (st in adj_names or pid in adj_names):
+                                        (st in adj_names or pid in adj_names):
                                     # add distance if one end is unknown
                                     o.d = Distance(feat['sd'], 'SD')
                                 o.th = feat['th'] if type(feat['th']) is float else None
                                 o.pc = feat['pc'] if type(feat['pc']) is str else None
                                 if dimension in [2, 3] and (o.hz is not None or o.d is not None) or \
-                                    dimension == 1 and o.v is not None:
+                                        dimension == 1 and o.v is not None:
                                     # direction or distance given
                                     g.add_observation(o)
                                     if pid in fix_names:
@@ -219,14 +216,14 @@ class NetworkDialog(QDialog):
             if t is None:
                 # adjustment failed
                 QMessageBox.warning(self, tr("Warning"),
-                    tr('gama-local not installed or other runtime error'))
+                                    tr('gama-local not installed or other runtime error'))
             else:
                 self.ui.ResultTextBrowser.append(t)
                 self.log.write_log(tr("Network adjustment"))
                 self.log.write(t)
         else:
             QMessageBox.warning(self, tr("Warning"),
-                tr('No points to adjust'))
+                                tr('No points to adjust'))
 
     def onHelpButton(self):
         """ Open user's guide at Network Adjustment in the default web browser.

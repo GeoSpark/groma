@@ -9,7 +9,7 @@
 """
 from __future__ import absolute_import
 
-from qgis.PyQt.QtCore import QDir, QFile, QFileInfo, QIODevice, QTemporaryFile, QProcess, QSettings
+from qgis.PyQt.QtCore import QDir, QFile, QFileInfo, QIODevice, QTemporaryFile, QProcess
 from qgis.PyQt.QtXml import QDomDocument, QXmlSimpleReader, QXmlInputSource
 
 # surveying calculation modules
@@ -37,9 +37,8 @@ class GamaInterface(object):
         self.stdev_dist1 = stdev_dist1
         self.points = []
         self.observations = []
-        gama_path = QSettings().value("SurveyingCalculation/gama_path", config.gama_path)
-        if QFileInfo(gama_path).exists():
-            gama_prog = gama_path
+        if QFileInfo(config.gama_path).exists():
+            gama_prog = config.gama_path
         else:
             # get operating system dependent file name of gama_local
             plugin_dir = QDir().cleanPath(QFileInfo(__file__).absolutePath())

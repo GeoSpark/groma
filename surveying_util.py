@@ -8,8 +8,7 @@
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
 from __future__ import absolute_import
-from qgis.core import *
-import re
+from qgis.core import QgsProject
 from .base_classes import *
 
 

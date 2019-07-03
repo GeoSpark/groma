@@ -3,33 +3,36 @@
 """
 .. module:: base_classes
     :platform: Linux, Windows
-    :synopsis: Basic classes for Land Surveying Plug-in for QGIS GPL v2.0 license Copyright (C) 2014-  DigiKom Kft. http://digikom.hu
+    :synopsis: Basic classes for Land Surveying Plug-in for QGIS
+    GPL v2.0 license Copyright (C) 2014-  DigiKom Kft. http://digikom.hu
 
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
-from __future__ import print_function
 
 from builtins import object
 import re
 import math
 
-#from PyQt4.QtCore import QCoreApplication
 from qgis.PyQt.QtWidgets import QApplication
 
 RO = 180 * 60 * 60 / math.pi
 RO_CC = 200 * 100 * 100 / math.pi
 PISEC = 180 * 60 * 60
 FOOT2M = 0.3048
+USFOOT2M = 1200/3937
+
 
 class Angle(object):
     """ Angle class, value stored in radian internally
     """
+
     def __init__(self, value, unit='RAD'):
         """ Constructor for an angle instance.
 
             :param value: angle value
             :param unit: angle unit (available units RAD/DMS/DEG/GON/NMEA/PDEG/SEC/MIL)
         """
+        self.value = value
         self.set_angle(value, unit)
 
     def get_angle(self, out='RAD'):
@@ -121,7 +124,7 @@ class Angle(object):
         return a
 
     def __dm2rad(self, angle):
-        "DDMM.nnnnnn NMEA angle to radian"
+        """DDMM.nnnnnn NMEA angle to radian"""
         try:
             w = angle / 100.0
             d = int(w)
@@ -131,7 +134,7 @@ class Angle(object):
         return a
 
     def __pdeg2rad(self, angle):
-        "dd.mmss to radian"
+        """dd.mmss to radian"""
         try:
             d = math.floor(angle)
             angle = round((angle - d) * 100, 10)
@@ -180,10 +183,10 @@ class Angle(object):
     def __dms(self):
         try:
             secs = round(self.__rad2sec())
-            min, sec = divmod(secs, 60)
-            deg, min = divmod(min, 60)
+            mins, sec = divmod(secs, 60)
+            deg, mins = divmod(mins, 60)
             deg = int(deg)
-            dms = '%d° %02d\' %02d"' % (deg, min, sec)
+            dms = '%d° %02d\' %02d"' % (deg, mins, sec)
         except (ValueError, TypeError):
             dms = None
         return dms
@@ -200,10 +203,10 @@ class Angle(object):
     def __rad2pdeg(self):
         try:
             secs = round(self.__rad2sec())
-            min, sec = divmod(secs, 60)
-            deg, min = divmod(min, 60)
+            mins, sec = divmod(secs, 60)
+            deg, mins = divmod(mins, 60)
             deg = int(deg)
-            pdeg = deg + min / 100.0 + sec / 10000.0
+            pdeg = deg + mins / 100.0 + sec / 10000.0
         except (ValueError, TypeError):
             pdeg = None
         return pdeg
@@ -221,22 +224,23 @@ class Point(object):
         Point class
     """
 
-    def __init__(self, id, e=None, n=None, z=None, pc=None, pt=None):
+    def __init__(self, _id, e=None, n=None, z=None, pc=None, pt=None):
         """ Initialize a new Point instance.
 
-            :param id: point name (string), use '@' for temporary points
+            :param _id: point name (string), use '@' for temporary points
             :param e: easting coordinate (float)
             :param n: northing coordinate (float)
             :param z: elevation (float)
             :param pc: point code (string)
             :param pt: point type (string, e.g. controll/detail)
         """
-        self.id = id
+        self.id = _id
         self.e = e
         self.n = n
         self.z = z
         self.pc = pc
         self.pt = pt
+
 
 class Distance(object):
     """
@@ -252,13 +256,16 @@ class Distance(object):
         self.d = d
         self.mode = m
 
+
 class PolarObservation(object):
     """
         Polar observation class
     """
 
     def __init__(self, tp, station=None, hz=None, v=None, d=None, th=None, pc=None):
-        """ Initialize new Polar observation object. There are two types of PolarObservation, station record and observation record. In station record instrument height is stored in th field, orientation angle stored in hz, v and d must be None
+        """ Initialize new Polar observation object. There are two types of PolarObservation, station record and
+        observation record. In station record instrument height is stored in th field, orientation angle stored in hz,
+        v and d must be None
 
             :param tp: target point id/station point id (string)
             :param station: 'station' or None, in case of 'station' this is a station record (string)
@@ -284,7 +291,7 @@ class PolarObservation(object):
         if self.d is None:
             return None
         if self.d.mode == 'HD' or self.v is None:
-			# no zenith angle use as horizontal
+            # no zenith angle use as horizontal
             return self.d.d
         elif self.d.mode == 'SD':
             return self.d.d * math.sin(self.v.get_angle())
@@ -292,9 +299,11 @@ class PolarObservation(object):
             return 0.0
         return None
 
+
 class Station(object):
     """ station data
     """
+
     def __init__(self, p, o):
         """ Initialize a new station instance.
 
@@ -304,10 +313,12 @@ class Station(object):
         self.p = p
         self.o = o
 
+
 class Circle(object):
     """
         circle object
     """
+
     def __init__(self, p1, p2, p3=None):
         """ Initialize a new circle instance.
 
@@ -340,11 +351,11 @@ class Circle(object):
                 self.r = distance2d(self.p, p1).d
             else:
                 self.r = None
-        elif isinstance(p1, Point) and isinstance(p2, Point) and isinstance(p3,  Angle):
+        elif isinstance(p1, Point) and isinstance(p2, Point) and isinstance(p3, Angle):
             t2 = distance2d(p1, p2).d / 2.0
             try:
                 d = t2 / math.tan(p3.get_angle() / 2.0)
-            except (ZeroDivisionError):
+            except ZeroDivisionError:
                 self.p = None
                 self.r = None
                 return
@@ -361,11 +372,12 @@ class Circle(object):
 
     def __center(self, p1, p2, p3):
         # midpoints
-        midp12 = Point("@", (p1.e + p2.e) / 2.0,  (p1.n + p2.n) / 2.0)
-        midp23 = Point("@", (p2.e + p3.e) / 2.0,  (p2.n + p3.n) / 2.0)
+        midp12 = Point("@", (p1.e + p2.e) / 2.0, (p1.n + p2.n) / 2.0)
+        midp23 = Point("@", (p2.e + p3.e) / 2.0, (p2.n + p3.n) / 2.0)
         d12 = bearing(p1, p2).get_angle() + math.pi / 2.0
         d23 = bearing(p2, p3).get_angle() + math.pi / 2.0
-        return intersecLL( midp12, midp23, d12, d23 )
+        return intersecLL(midp12, midp23, d12, d23)
+
 
 def distance2d(p1, p2):
     """ Calculate horizontal distance between two points
@@ -379,6 +391,7 @@ def distance2d(p1, p2):
         return None
     return Distance(d, 'HD')
 
+
 def distance3d(p1, p2):
     """ Calculate 3D distance between two points
         :param p1: start point (Point)
@@ -390,6 +403,7 @@ def distance3d(p1, p2):
     except (ValueError, TypeError):
         return None
     return Distance(d, 'SD')
+
 
 def bearing(p1, p2):
     """ Calculate whole circle bearing
@@ -404,6 +418,7 @@ def bearing(p1, p2):
     except TypeError:
         return None
     return Angle(wcb)
+
 
 def intersecLL(pa, pb, dap, dbp):
     """ Calculate intersection of two lines solving::
@@ -421,7 +436,7 @@ def intersecLL(pa, pb, dap, dbp):
         cdap = math.cos(dap)
         sdbp = math.sin(dbp)
         cdbp = math.cos(dbp)
-        det = sdap*cdbp - sdbp*cdap
+        det = sdap * cdbp - sdbp * cdap
 
         t1 = ((pb.e - pa.e) * cdbp - (pb.n - pa.n) * sdbp) / det
 
@@ -430,6 +445,7 @@ def intersecLL(pa, pb, dap, dbp):
         return Point("@", e, n)
     except (ValueError, TypeError, ZeroDivisionError):
         return None
+
 
 def intersecCC(circle1, circle2):
     """ Calculate intersection of two circles solving::
@@ -442,18 +458,18 @@ def intersecCC(circle1, circle2):
     """
     try:
         swap = False
-        if math.fabs( circle2.p.e - circle1.p.e ) < 0.001:
+        if math.fabs(circle2.p.e - circle1.p.e) < 0.001:
             circle1.p.e, circle1.p.n = circle1.p.n, circle1.p.e
             circle2.p.e, circle2.p.n = circle2.p.n, circle2.p.e
             swap = True
 
-        t = ( circle1.r ** 2 - circle1.p.e ** 2 - circle2.r ** 2 + \
-              circle2.p.e ** 2 + circle2.p.n ** 2 - circle1.p.n ** 2 ) / 2.0
+        t = (circle1.r ** 2 - circle1.p.e ** 2 - circle2.r ** 2 +
+             circle2.p.e ** 2 + circle2.p.n ** 2 - circle1.p.n ** 2) / 2.0
         de = circle2.p.e - circle1.p.e
         dn = circle2.p.n - circle1.p.n
 
         a = 1.0 + dn * dn / de / de
-        b = 2.0 * (circle1.p.e * dn / de - circle1.p.n - t * dn / de / de )
+        b = 2.0 * (circle1.p.e * dn / de - circle1.p.n - t * dn / de / de)
         c = t * t / de / de - 2 * circle1.p.e * t / de - circle1.r ** 2 + \
             circle1.p.e ** 2 + circle1.p.n ** 2
         d = b * b - 4 * a * c
@@ -461,28 +477,32 @@ def intersecCC(circle1, circle2):
         np2 = (-b - math.sqrt(d)) / 2.0 / a
         ep1 = (t - dn * np1) / de
         ep2 = (t - dn * np2) / de
-        if swap == False:
-            return [ Point("@",ep1,np1), Point("@",ep2,np2) ]
+        if not swap:
+            return [Point("@", ep1, np1), Point("@", ep2, np2)]
         else:
-            return [ Point("@",np1,ep1), Point("@",np2,ep2) ]
+            return [Point("@", np1, ep1), Point("@", np2, ep2)]
     except (ValueError, TypeError, ZeroDivisionError):
         return None
 
+
 def tr(message):
-    """Get the translation for a string using Qt translation API. We implement this ourselves since we do not inherit QObject.
+    """Get the translation for a string using Qt translation API.
+    We implement this ourselves since we do not inherit QObject.
 
     :param message: string for translation (str, QString)
     :returns: translated version of message (QString)
     """
     # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-    #return QCoreApplication.translate('SurveyingCalculation', message)
+    # return QCoreApplication.translate('SurveyingCalculation', message)
     return QApplication.translate('@default', message)
 
-def compare (a, b, tol=0.001):
+
+def compare(a, b, tol=0.001):
     """ Compare to objects for equality. Only for testing purposes.
 
         :param a: first instance
         :param b: second instance
+        :param tol: Tolerance
     """
     if a is None and b is None:
         return True
@@ -497,81 +517,3 @@ def compare (a, b, tol=0.001):
         if not compare(a.__dict__[i], b.__dict__[i], tol):
             return False
     return True
-
-if __name__ == "__main__":
-    """
-        unit test
-    """
-    a = Point('1', 100, 200)
-    if not compare(a, a):
-        # fix_print_with_import
-        print("Compare function test failed")
-    # fix_print_with_import
-    print("Test for Angle class")
-    adms = '359-59-59'
-    a = Angle(adms, 'DMS')
-    if not compare(a.get_angle('DMS'), adms):
-        # fix_print_with_import
-        print("DMS test failed")
-    if not compare(Angle(a.get_angle('RAD'), 'RAD').get_angle('DMS'), adms):
-        # fix_print_with_import
-        print("RAD test failed")
-    if not compare(Angle(a.get_angle('DMS'), 'DMS').get_angle('DMS'), adms):
-        # fix_print_with_import
-        print("DMS 2 test failed")
-    if not compare(Angle(a.get_angle('DEG'), 'DEG').get_angle('DMS'), adms):
-        # fix_print_with_import
-        print("DEG test failed")
-    if not compare(Angle(a.get_angle('GON'), 'GON').get_angle('DMS'), adms):
-        # fix_print_with_import
-        print("GON test failed")
-    if not compare(Angle(a.get_angle('NMEA'), 'NMEA').get_angle('DMS'), adms):
-        # fix_print_with_import
-        print("NMEA test failed")
-    if not compare(Angle(a.get_angle('PDEG'), 'PDEG').get_angle('DMS'), adms):
-        # fix_print_with_import
-        print("PDEG test failed")
-    if not compare(Angle('16-20', 'DMS').get_angle('DMS'), '16-20-00'):
-        # fix_print_with_import
-        print("Short DMS test failed")
-    if not compare(Angle('16', 'DMS').get_angle('DMS'), '16-00-00'):
-        # fix_print_with_import
-        print("Short DMS 2 test failed")
-    # new test style to continue from here
-    p = [Point('1', 1000, 2000, 50), Point('2', 1500, 2000, 60)]
-    o = [PolarObservation('1', 'station', None, None, None, 1.54),
-         PolarObservation('2', None, Angle(60.9345, 'GON'), Angle(89.855615, 'DEG'), Distance(501.105, 'SD'), 1.80)]
-    if not compare(o[1].horiz_dist(), 501.103):
-        # fix_print_with_import
-        print("Horizontal distance test failed")
-    c = Circle(Point('3', 100, 200), 100.0)
-    if not compare(c.p.e, 100):
-        # fix_print_with_import
-        print("Circle from center and radius test failed by e")
-    if not compare(c.p.n, 200):
-        # fix_print_with_import
-        print("Circle from center and radius test failed by n")
-    if not compare(c.r, 100.0):
-        # fix_print_with_import
-        print("Circle from center and radius test failed by r")
-    c = Circle(Point('4', 0, 50), Point('5', 50, 100), Point('6', 100, 50))
-    if not compare(c.p.e, 50.0):
-        # fix_print_with_import
-        print("Circle from 3 points test failed by e")
-    if not compare(c.p.n, 50.0):
-        # fix_print_with_import
-        print("Circle from 3 points test failed by n")
-    if not compare(c.r, 50.0):
-        # fix_print_with_import
-        print("Circle from 3 points test failed by r")
-    c = Circle(Point('4', 50, 50), Point('5', 100, 100), Point('6', 200, 200))
-    c = Circle(Point('4', 100, 100), Point('5', 0, 100), Angle(60, 'DEG'))
-    if not compare(c.p.e, 50.0):
-        # fix_print_with_import
-        print("Circle from 2 points and angle test failed by e")
-    if not compare(c.p.n, 128.867513459):
-        # fix_print_with_import
-        print("Circle from 2 points and angle test failed by n")
-    if not compare(c.r, 57.735026919):
-        # fix_print_with_import
-        print("Circle from 2 points and angle test failed by r")

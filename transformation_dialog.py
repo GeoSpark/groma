@@ -8,22 +8,23 @@
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
 from __future__ import absolute_import
-from builtins import range
+
 import platform
 import webbrowser
-from qgis.PyQt.QtWidgets import QDialog, QFileDialog, QMessageBox
+
 from qgis.PyQt.QtGui import QFont
-from qgis.PyQt.QtCore import QCoreApplication, QSettings
+from qgis.PyQt.QtWidgets import QDialog, QFileDialog, QMessageBox
 
 from . import config
-from .transformation_calc import Ui_TransformationCalcDialog
-from .base_classes import *
-from .surveying_util import *
 from .calculation import *
+from .surveying_util import *
+from .transformation_calc import Ui_TransformationCalcDialog
+
 
 class TransformationDialog(QDialog):
     """ Class for transformation calculation dialog
     """
+
     def __init__(self, log):
         """ Initialize dialog data and event handlers
         """
@@ -51,11 +52,8 @@ class TransformationDialog(QDialog):
         """
         if platform.system() == 'Linux':
             # change font
-            fontname = QSettings().value("SurveyingCalculation/fontname",config.fontname)
-            fontsize = int(QSettings().value("SurveyingCalculation/fontsize",config.fontsize))
-            self.ui.ResultTextBrowser.setFont(QFont(fontname, fontsize))
-        log_path = QSettings().value("SurveyingCalculation/log_path",config.log_path)
-        self.log.set_log_path(log_path)
+            self.ui.ResultTextBrowser.setFont(QFont(config.fontname, int(config.fontsize)))
+        self.log.set_log_path(config.log_path)
         self.reset()
 
     def reset(self):
@@ -98,7 +96,7 @@ class TransformationDialog(QDialog):
         """ Select target shape file
         """
         fname, __ = QFileDialog.getOpenFileName(None, tr('Coordinate list'),
-            filter= tr('Coordinate list file (*.shp);;'))
+                                                filter=tr('Coordinate list file (*.shp);;'))
         if fname:
             self.ui.ToShapeEdit.setText(fname)
             if len(self.ui.FromLayerComboBox.currentText()):
@@ -115,7 +113,7 @@ class TransformationDialog(QDialog):
         """
         selected = self.ui.CommonList.selectedItems()
         for item in selected:
-            i  = self.ui.CommonList.row(item)
+            i = self.ui.CommonList.row(item)
             self.ui.UsedList.addItem(self.ui.CommonList.takeItem(i))
             self.used.append(self.common[i])
             del self.common[i]
@@ -129,13 +127,13 @@ class TransformationDialog(QDialog):
             self.ui.FourthRadio.setEnabled(True)
         if len(self.used) > 20:
             self.ui.FifthRadio.setEnabled(True)
-    
+
     def onRemoveButton(self):
         """ Remove selected points from used points
         """
         selected = self.ui.UsedList.selectedItems()
         for item in selected:
-            i  = self.ui.UsedList.row(item)
+            i = self.ui.UsedList.row(item)
             self.ui.CommonList.addItem(self.ui.UsedList.takeItem(i))
             self.common.append(self.used[i])
             del self.used[i]
@@ -159,7 +157,7 @@ class TransformationDialog(QDialog):
         to_name = self.ui.ToShapeEdit.text()
         if len(from_name) == 0 or len(to_name) == 0:
             return
-        to_shp = QgsVectorLayer(to_name, "tmp_to_shape", "ogr") 
+        to_shp = QgsVectorLayer(to_name, "tmp_to_shape", "ogr")
         QgsMapLayerRegistry.instance().addMapLayer(to_shp, False)
         to_points = get_known(2, "tmp_to_shape")
         QgsMapLayerRegistry.instance().removeMapLayer("tmp_to_shape")
@@ -168,10 +166,10 @@ class TransformationDialog(QDialog):
         self.used = []
         if self.from_points is None:
             QMessageBox.warning(self, tr("Warning"), \
-                tr("No points with coordinates in source coordinate list"))
+                                tr("No points with coordinates in source coordinate list"))
         elif to_points is None:
-            QMessageBox.warning(self, tr("Warning"),\
-                tr("No points with coordinates in target coordinate list"))
+            QMessageBox.warning(self, tr("Warning"), \
+                                tr("No points with coordinates in target coordinate list"))
         else:
             for from_p in self.from_points:
                 if from_p in to_points:
@@ -179,9 +177,8 @@ class TransformationDialog(QDialog):
             for p in self.common:
                 self.ui.CommonList.addItem(p)
             if len(self.common) == 0:
-                QMessageBox.warning(self, tr("Warning"),\
-                    tr("No common points in coordinate lists"))
-                
+                QMessageBox.warning(self, tr("Warning"), \
+                                    tr("No common points in coordinate lists"))
 
     def onCalcButton(self):
         """ Start transformation calculation
@@ -196,7 +193,7 @@ class TransformationDialog(QDialog):
         if len(to_name) == 0:
             QMessageBox.warning(self, tr("Warning"), tr("Select to shape file!"))
             return
-        to_shp = QgsVectorLayer(to_name, "tmp_to_shape", "ogr") 
+        to_shp = QgsVectorLayer(to_name, "tmp_to_shape", "ogr")
         QgsMapLayerRegistry.instance().addMapLayer(to_shp, False)
         for point_id in self.used:
             # get coords of points
@@ -241,9 +238,9 @@ class TransformationDialog(QDialog):
             de = p_to.e - e
             dn = p_to.n - n
             buf = '%-20s ' % p_from.id + \
-                '%12.3f ' % p_from.e + '%12.3f ' % p_from.n + \
-                '%12.3f ' % p_to.e + '%12.3f ' % p_to.n + \
-                '%6.3f ' % de + '%6.3f ' % dn
+                  '%12.3f ' % p_from.e + '%12.3f ' % p_from.n + \
+                  '%12.3f ' % p_to.e + '%12.3f ' % p_to.n + \
+                  '%6.3f ' % de + '%6.3f ' % dn
             self.ui.ResultTextBrowser.append(buf)
             self.log.write(buf)
         # transform and store new points
@@ -252,8 +249,8 @@ class TransformationDialog(QDialog):
                 p = get_coord(p_num, from_list)
                 (e, n) = tr_func(p, tr_res)
                 buf = '%-20s ' % p.id + \
-                    '%12.3f ' % p.e + '%12.3f ' % p.n + \
-                    '%12.3f ' % e + '%12.3f ' % n
+                      '%12.3f ' % p.e + '%12.3f ' % p.n + \
+                      '%12.3f ' % e + '%12.3f ' % n
                 self.ui.ResultTextBrowser.append(buf)
                 self.log.write(buf)
                 pp = Point(p_num, e, n, pc='transformed')
@@ -295,11 +292,11 @@ class TransformationDialog(QDialog):
         l = 0
         e = tr[2][2]
         n = tr[2][3]
-        for j in range(0,degree+1):
-            for k in range(0,degree+1):
+        for j in range(0, degree + 1):
+            for k in range(0, degree + 1):
                 if j + k <= degree:
-                    e += tr[0][l] * math.pow(de,k) * math.pow(dn,j)
-                    n += tr[1][l] * math.pow(de,k) * math.pow(dn,j)
+                    e += tr[0][l] * math.pow(de, k) * math.pow(dn, j)
+                    n += tr[1][l] * math.pow(de, k) * math.pow(dn, j)
                     l += 1
         return (e, n)
 

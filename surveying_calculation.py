@@ -7,46 +7,44 @@
 .. moduleauthor: Zoltan Siki <siki@agt.bme.hu>
 
 """
-from __future__ import print_function
-from __future__ import absolute_import
+# Initialize Qt resources from file resources.py
+# from os import unlink
+import webbrowser
+
 # Use pdb for debugging
 # import pdb
 # from PyQt4.QtCore import pyqtRemoveInputHook
 # generic python modules
-from builtins import object
-from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QDir, QFileInfo, QRegExp, Qt
-from qgis.PyQt.QtWidgets import QAction, QMenu, QMessageBox, QFileDialog, QDialog
+from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QFileInfo, QRegExp, Qt
 from qgis.PyQt.QtGui import QIcon
-from qgis.core import *
-# Initialize Qt resources from file resources.py
-from . import resources_rc
-# from os import unlink
-import webbrowser
+from qgis.PyQt.QtWidgets import QAction, QMenu, QMessageBox, QFileDialog, QDialog
+from qgis.core import Qgis, QgsMessageLog, QgsMapLayer, QgsWkbTypes
 
 # plugin specific python modules
 from . import config
-from .base_classes import tr
-from .new_point_dialog import NewPointDialog
-from .single_dialog import SingleDialog
-from .traverse_dialog import TraverseDialog
+# from .calculation import *
+from .line_tool import LineMapTool
 from .network_dialog import NetworkDialog
-from .transformation_dialog import TransformationDialog
+from .new_point_dialog import NewPointDialog
 # from .batch_plotting_dialog import BatchPlottingDialog
 from .plugin_settings_dialog import PluginSettingsDialog
-from .totalstations import *
-from .surveying_util import *
-from .calculation import *
 from .resultlog import *
-from .line_tool import LineMapTool
+from .single_dialog import SingleDialog
+from .surveying_util import *
+from .totalstations import *
+from .transformation_dialog import TransformationDialog
+from .traverse_dialog import TraverseDialog
 
 
+# noinspection PyUnresolvedReferences
 class SurveyingCalculation(object):
     """SurveyingCalculation QGIS Plugin Implementation."""
 
     def __init__(self, iface):
         """Constructor.
 
-        :param iface: an interface instance that will be passed to this class which provides the hook by which you can manipulate the QGIS application at run time (QgsInterface)
+        :param iface: an interface instance that will be passed to this class which provides the hook by which you can
+        manipulate the QGIS application at run time (QgsInterface)
         """
         # Save reference to the QGIS interface
         self.iface = iface
@@ -56,11 +54,7 @@ class SurveyingCalculation(object):
         locale = QSettings().value('locale/userLocale')[0:2]
         locale_path = QDir.cleanPath(self.plugin_dir + QDir.separator() + 'i18n' +
                                      QDir.separator() + '{}.qm'.format(locale))
-        # fix_print_with_import
-        print(locale_path)
         if QFileInfo(locale_path).exists():
-            # fix_print_with_import
-            print("exists")
             self.translator = QTranslator()
             self.translator.load(locale_path)
 
@@ -68,7 +62,7 @@ class SurveyingCalculation(object):
                 QCoreApplication.installTranslator(self.translator)
 
         # init result log
-        log_path_2 = QSettings().value("SurveyingCalculation/log_path", config.log_path)
+        log_path_2 = config.log_path
 
         if len(log_path_2) > 0:
             log_path = log_path_2
@@ -85,30 +79,24 @@ class SurveyingCalculation(object):
         # self.plotbytemplate_dlg = BatchPlottingDialog(self.iface, False)
         # self.batchplotting_dlg = BatchPlottingDialog(self.iface, True)
 
-        # Declare instance attributes
+        config.load_config()
 
-    # noinspection PyMethodMayBeStatic
-    # def tr(self, message):
-    #    """Get the translation for a string using Qt translation API. We implement this ourselves since we do not inherit QObject.
-
-    #    :param message: string for translation (str, QString)
-    #    :returns: translated version of message (QString)
-    #    """
-    # noinspection PyTypeChecker,PyArgumentList,PyCallByClass
-    # return QCoreApplication.translate('SurveyingCalculation', message)
-    #    return tr(message)
+        QgsMessageLog.logMessage('Plugin initialised', 'SurveyingCalculation', level=Qgis.Info)
 
     def add_action(self, icon_path, text, callback, enabled_flag=True,
                    add_to_menu=True, add_to_toolbar=True, status_tip=None,
                    whats_this=None, parent=None):
         """Add a toolbar icon to the InaSAFE toolbar.
 
-        :param icon_path: path to the icon for this action. Can be a resource path (e.g. ':/plugins/foo/bar.png') or a normal file system path (str)
+        :param icon_path: path to the icon for this action. Can be a resource path (e.g. ':/plugins/foo/bar.png') or a
+                          normal file system path (str)
         :param text: text that should be shown in menu items for this action (str)
         :param callback: function to be called when the action is triggered (function)
         :param enabled_flag: a flag indicating if the action should be enabled by default (bool). Defaults to True.
-        :param add_to_menu: flag indicating whether the action should also be added to the menu (bool). Defaults to True.
-        :param add_to_toolbar: flag indicating whether the action should also be added to the toolbar (bool). Defaults to True.
+        :param add_to_menu: flag indicating whether the action should also be added to the menu (bool).
+                            Defaults to True.
+        :param add_to_toolbar: flag indicating whether the action should also be added to the toolbar (bool).
+                               Defaults to True.
         :param status_tip: optional text to show in a popup when mouse pointer hovers over the action (str)
         :param parent: parent widget for the new action (QWidget). Defaults None.
         :param whats_this: optional text to show in the status bar when the mouse pointer hovers over the action (str)
@@ -268,11 +256,15 @@ class SurveyingCalculation(object):
         if get_coordlist() is None:
             QMessageBox.warning(self.iface.mainWindow(), tr("Warning"),
                                 tr("No coordinate list is opened, coordinates will be lost from the fieldbook"))
-        homedir = QSettings().value("SurveyingCalculation/homedir", config.homedir)
         fname, __ = QFileDialog.getOpenFileName(self.iface.mainWindow(),
-                                                tr('Electric fieldbook'), homedir,
-                                                filter=tr(
-                                                    'Leica GSI (*.gsi);;Leica IDX (*.idx);;Geodimeter JOB/ARE (*.job *.are);;Sokkia CRD (*.crd);;SurvCE RW5 (*.rw5);;STONEX DAT (*.dat);;Text dump (*.dmp)'))
+                                                tr('Electric fieldbook'), config.homedir,
+                                                filter=tr('Leica GSI (*.gsi);;'
+                                                          'Leica IDX (*.idx);;'
+                                                          'Geodimeter JOB/ARE (*.job *.are);;'
+                                                          'Sokkia CRD (*.crd);;'
+                                                          'SurvCE RW5 (*.rw5);;'
+                                                          'STONEX DAT (*.dat);;'
+                                                          'Text dump (*.dmp)'))
         if fname:
             # file selected
             # make a copy of dbf template if not are is loaded
@@ -285,8 +277,9 @@ class SurveyingCalculation(object):
                 if not ofname:
                     return
                 # remember last input dir
-                QSettings().setValue("SurveyingCalculation/homedir", QFileInfo(fname).absolutePath())
-                QSettings().sync()
+                config.homedir = QFileInfo(fname).absolutePath()
+                config.store_config()
+
                 # start with 'fb_'?
                 if QRegExp('fb_').indexIn(QFileInfo(ofname).baseName()):
                     ofname = QDir.cleanPath(QFileInfo(ofname).absolutePath() +
@@ -399,7 +392,7 @@ class SurveyingCalculation(object):
                     n_co += 1
                 i += 10
             # fb_dbf.commitChanges()
-            if QRegExp('\.are$', Qt.CaseInsensitive).indexIn(fname) == -1:
+            if QRegExp(r'\.are$', Qt.CaseInsensitive).indexIn(fname) == -1:
                 if n_fb == 0:  # no observations
                     QgsProject.instance().removeMapLayer(fb_dbf.id())
                     # remove empty file
@@ -509,16 +502,15 @@ class SurveyingCalculation(object):
         settings_dlg = PluginSettingsDialog()
         result = settings_dlg.exec_()
         if result == QDialog.Accepted:
-            log_path = QSettings().value("SurveyingCalculation/log_path", config.log_path)
-            self.log.set_log_path(log_path)
+            self.log.set_log_path(config.log_path)
 
     def about(self):
         """ About box of the plugin
         """
         QMessageBox.information(self.iface.mainWindow(),
                                 tr('About'),
-                                tr(
-                                    'Surveying Calculation Plugin\n\n (c) DigiKom Ltd 2014- http://digikom.hu, mail (at) digikom.hu\nVersion 0.2'))
+                                tr('Surveying Calculation Plugin\n\n (c) DigiKom Ltd 2014- '
+                                   'http://digikom.hu, mail (at) digikom.hu\nVersion 0.2'))
 
     def help(self):
         """ Open user's guide of the plugin in the default web browser.
