@@ -6,12 +6,14 @@
 
 .. moduleauthor: Zoltan Siki <siki@agt.bme.hu>
 """
-from PyQt4.QtGui import QDialog, QFileDialog, QMessageBox
-from PyQt4.QtCore import Qt, QSettings, QDir, QFileInfo
+from __future__ import absolute_import
+from builtins import range
+from qgis.PyQt.QtWidgets import QDialog, QFileDialog, QMessageBox
+from qgis.PyQt.QtCore import Qt, QSettings, QDir, QFileInfo
 # plugin specific python modules
-import config
-from plugin_settings import Ui_PluginSettingsDialog
-from base_classes import tr
+from . import config
+from .plugin_settings import Ui_PluginSettingsDialog
+from .base_classes import tr
 
 class PluginSettingsDialog(QDialog):
     """ Class for plugin settings dialog
@@ -65,7 +67,7 @@ class PluginSettingsDialog(QDialog):
     def onLogPathButton(self):
         """ Change the directory of the log file.
         """
-        path = QFileDialog.getSaveFileName(self, 
+        path, __ = QFileDialog.getSaveFileName(self, 
                         tr("Select Log File Path"),
                         self.ui.LogPathEdit.text(), "",
                         QFileDialog.DontConfirmOverwrite)
@@ -75,7 +77,7 @@ class PluginSettingsDialog(QDialog):
     def onGamaPathButton(self):
         """ Change the directory of the gama-local executable.
         """
-        path = QFileDialog.getOpenFileName(self, 
+        path, __ = QFileDialog.getOpenFileName(self, 
                         tr("Select Path to GNU Gama Executable"),
                         self.ui.GamaPathEdit.text())
         if path!="":

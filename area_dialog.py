@@ -6,9 +6,11 @@
 
 .. moduleauthor: Zoltan Siki <siki@agt.bme.hu>
 """
-from PyQt4.QtGui import QDialog, QMessageBox
-from area_div import Ui_AreaDivDialog
-from base_classes import tr
+from __future__ import absolute_import
+from builtins import str
+from qgis.PyQt.QtWidgets import QDialog, QMessageBox
+from .area_div import Ui_AreaDivDialog
+from .base_classes import tr
 
 class AreaDialog(QDialog):
     """ Class for area division dialog

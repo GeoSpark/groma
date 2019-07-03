@@ -1,7 +1,7 @@
-# This file contains metadata for your plugin. Since 
-# version 2.0 of QGIS this is the proper way to supply 
-# information about a plugin. The old method of 
-# embedding metadata in __init__.py will 
+# This file contains metadata for your plugin. Since
+# version 2.0 of QGIS this is the proper way to supply
+# information about a plugin. The old method of
+# embedding metadata in __init__.py will
 # is no longer supported since version 2.0.
 
 # This file should be included when you package your plugin.# Mandatory items:
@@ -9,7 +9,7 @@
 [general]
 name=SurveyingCalculation
 about=Extend QGIS functionality to make land surveying calculations as traversing, resection, free station, network adjustment and area division and print by templates.
-qgisMinimumVersion=2.0
+qgisMinimumVersion=3.0
 description=To solve surveying calculations
 version=0.2
 author=DigiKom Kft.

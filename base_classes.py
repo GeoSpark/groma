@@ -7,12 +7,14 @@
 
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
+from __future__ import print_function
 
+from builtins import object
 import re
 import math
 
 #from PyQt4.QtCore import QCoreApplication
-from PyQt4.QtGui import QApplication
+from qgis.PyQt.QtWidgets import QApplication
 
 RO = 180 * 60 * 60 / math.pi
 RO_CC = 200 * 100 * 100 / math.pi
@@ -181,7 +183,7 @@ class Angle(object):
             min, sec = divmod(secs, 60)
             deg, min = divmod(min, 60)
             deg = int(deg)
-            dms = "%d-%02d-%02d" % (deg, min, sec)
+            dms = '%d° %02d\' %02d"' % (deg, min, sec)
         except (ValueError, TypeError):
             dms = None
         return dms
@@ -307,7 +309,7 @@ class Circle(object):
         circle object
     """
     def __init__(self, p1, p2, p3=None):
-        """ Initialize a new circle instance. 
+        """ Initialize a new circle instance.
 
             Multiple initialize signatures are available.
 
@@ -420,9 +422,9 @@ def intersecLL(pa, pb, dap, dbp):
         sdbp = math.sin(dbp)
         cdbp = math.cos(dbp)
         det = sdap*cdbp - sdbp*cdap
-            
+
         t1 = ((pb.e - pa.e) * cdbp - (pb.n - pa.n) * sdbp) / det
-        
+
         e = pa.e + t1 * sdap
         n = pa.n + t1 * cdap
         return Point("@", e, n)
@@ -491,7 +493,7 @@ def compare (a, b, tol=0.001):
         return a == b
     if type(a) is float:
         return math.fabs(a - b) < tol
-    for i in a.__dict__.keys():
+    for i in list(a.__dict__.keys()):
         if not compare(a.__dict__[i], b.__dict__[i], tol):
             return False
     return True
@@ -502,53 +504,74 @@ if __name__ == "__main__":
     """
     a = Point('1', 100, 200)
     if not compare(a, a):
-        print "Compare function test failed"
-    print "Test for Angle class"
+        # fix_print_with_import
+        print("Compare function test failed")
+    # fix_print_with_import
+    print("Test for Angle class")
     adms = '359-59-59'
     a = Angle(adms, 'DMS')
     if not compare(a.get_angle('DMS'), adms):
-        print "DMS test failed"
+        # fix_print_with_import
+        print("DMS test failed")
     if not compare(Angle(a.get_angle('RAD'), 'RAD').get_angle('DMS'), adms):
-        print "RAD test failed"
+        # fix_print_with_import
+        print("RAD test failed")
     if not compare(Angle(a.get_angle('DMS'), 'DMS').get_angle('DMS'), adms):
-        print "DMS 2 test failed"
+        # fix_print_with_import
+        print("DMS 2 test failed")
     if not compare(Angle(a.get_angle('DEG'), 'DEG').get_angle('DMS'), adms):
-        print "DEG test failed"
+        # fix_print_with_import
+        print("DEG test failed")
     if not compare(Angle(a.get_angle('GON'), 'GON').get_angle('DMS'), adms):
-        print "GON test failed"
+        # fix_print_with_import
+        print("GON test failed")
     if not compare(Angle(a.get_angle('NMEA'), 'NMEA').get_angle('DMS'), adms):
-        print "NMEA test failed"
+        # fix_print_with_import
+        print("NMEA test failed")
     if not compare(Angle(a.get_angle('PDEG'), 'PDEG').get_angle('DMS'), adms):
-        print "PDEG test failed"
+        # fix_print_with_import
+        print("PDEG test failed")
     if not compare(Angle('16-20', 'DMS').get_angle('DMS'), '16-20-00'):
-        print "Short DMS test failed"
+        # fix_print_with_import
+        print("Short DMS test failed")
     if not compare(Angle('16', 'DMS').get_angle('DMS'), '16-00-00'):
-        print "Short DMS 2 test failed"
+        # fix_print_with_import
+        print("Short DMS 2 test failed")
     # new test style to continue from here
     p = [Point('1', 1000, 2000, 50), Point('2', 1500, 2000, 60)]
     o = [PolarObservation('1', 'station', None, None, None, 1.54),
          PolarObservation('2', None, Angle(60.9345, 'GON'), Angle(89.855615, 'DEG'), Distance(501.105, 'SD'), 1.80)]
     if not compare(o[1].horiz_dist(), 501.103):
-        print "Horizontal distance test failed"
+        # fix_print_with_import
+        print("Horizontal distance test failed")
     c = Circle(Point('3', 100, 200), 100.0)
     if not compare(c.p.e, 100):
-        print "Circle from center and radius test failed by e"
+        # fix_print_with_import
+        print("Circle from center and radius test failed by e")
     if not compare(c.p.n, 200):
-        print "Circle from center and radius test failed by n"
+        # fix_print_with_import
+        print("Circle from center and radius test failed by n")
     if not compare(c.r, 100.0):
-        print "Circle from center and radius test failed by r"
+        # fix_print_with_import
+        print("Circle from center and radius test failed by r")
     c = Circle(Point('4', 0, 50), Point('5', 50, 100), Point('6', 100, 50))
     if not compare(c.p.e, 50.0):
-        print "Circle from 3 points test failed by e"
+        # fix_print_with_import
+        print("Circle from 3 points test failed by e")
     if not compare(c.p.n, 50.0):
-        print "Circle from 3 points test failed by n"
+        # fix_print_with_import
+        print("Circle from 3 points test failed by n")
     if not compare(c.r, 50.0):
-        print "Circle from 3 points test failed by r"
+        # fix_print_with_import
+        print("Circle from 3 points test failed by r")
     c = Circle(Point('4', 50, 50), Point('5', 100, 100), Point('6', 200, 200))
     c = Circle(Point('4', 100, 100), Point('5', 0, 100), Angle(60, 'DEG'))
     if not compare(c.p.e, 50.0):
-        print "Circle from 2 points and angle test failed by e"
+        # fix_print_with_import
+        print("Circle from 2 points and angle test failed by e")
     if not compare(c.p.n, 128.867513459):
-        print "Circle from 2 points and angle test failed by n"
+        # fix_print_with_import
+        print("Circle from 2 points and angle test failed by n")
     if not compare(c.r, 57.735026919):
-        print "Circle from 2 points and angle test failed by r"
+        # fix_print_with_import
+        print("Circle from 2 points and angle test failed by r")

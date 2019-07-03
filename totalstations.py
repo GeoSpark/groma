@@ -7,9 +7,12 @@
 
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
-
+from __future__ import print_function
+from __future__ import absolute_import
+import math
 import re
-from base_classes import Angle
+from .base_classes import Angle, FOOT2M
+
 
 class TotalStation(object):
     """ Base class to load different total station data format
@@ -62,7 +65,8 @@ class TotalStation(object):
             return self.separator.split(buf.strip('\r\n'))
         return buf.strip('\r\n')
 
-    def trim_left(self, s, ch):
+    @staticmethod
+    def trim_left(s, ch):
         """ Strip left part of a string
 
             :param s: string to left trim
@@ -79,10 +83,11 @@ class TotalStation(object):
         """
         pass
 
+
 class LeicaGsi(TotalStation):
     """ Class to read leica GSI 8/16 data
     """
- 
+
     def __init__(self, fname, separator=' '):
         """ Initialize a new instance
 
@@ -91,7 +96,8 @@ class LeicaGsi(TotalStation):
         """
         super(LeicaGsi, self).__init__(fname, separator)
 
-    def convert(self, val, unit):
+    @staticmethod
+    def convert(val, unit):
         """ Convert angle to radian, distance to meter
 
             :param val: value to convert (float)
@@ -127,7 +133,7 @@ class LeicaGsi(TotalStation):
             # meter, 5 decimals
             res = val / 100000.0
         return res
- 
+
     def parse_next(self):
         """ Parse single line from input
 
@@ -210,9 +216,11 @@ class LeicaGsi(TotalStation):
                 res['station'] = 'station'
         return res
 
+
 class JobAre(TotalStation):
     """ Class to import JOB/ARE data from file
     """
+
     def __init__(self, fname, separator='='):
         """ Initialize a new instance
 
@@ -256,10 +264,8 @@ class JobAre(TotalStation):
             item_code = buf[0].strip()
             if item_code == '2':
                 ret = self.res
-                self.res = {}
+                self.res = {'point_id': buf[1].strip(), 'station': 'station'}
                 # station point id
-                self.res['point_id'] = buf[1].strip()
-                self.res['station'] = 'station'
                 if len(ret):
                     return ret
             elif item_code == '3':
@@ -270,9 +276,8 @@ class JobAre(TotalStation):
                 self.res['code'] = buf[1].strip()
             elif item_code == '5' or item_code == '62':
                 ret = self.res
-                self.res = {}
+                self.res = {'point_id': buf[1].strip()}
                 # target point id
-                self.res['point_id'] = buf[1].strip()
                 if len(ret):
                     return ret
             elif item_code == '6':
@@ -280,11 +285,11 @@ class JobAre(TotalStation):
                 self.res['th'] = self.dist_conv(float(buf[1].strip()))
             elif item_code == '7' or item_code == '21':
                 # horizontal angle
-                self.res['hz'] = Angle(float(buf[1]), self.angle_unit).get_angle('GON')
+                self.res['hz'] = Angle(float(buf[1]), self.angle_unit).get_angle('DEG')
                 self.res['station'] = None
             elif item_code == '8':
                 # zenit angle
-                self.res['v'] = Angle(float(buf[1]), self.angle_unit).get_angle('GON')
+                self.res['v'] = Angle(float(buf[1]), self.angle_unit).get_angle('DEG')
                 self.res['station'] = None
             elif item_code == '9':
                 # slope distance
@@ -311,9 +316,11 @@ class JobAre(TotalStation):
                 # elevation
                 self.res['station_z'] = self.dist_conv(float(buf[1].strip()))
 
+
 class Sdr(TotalStation):
     """ Class to import Sokkia field books
     """
+
     def __init__(self, fname, separator=None):
         """ Initialize a new instance
 
@@ -321,12 +328,12 @@ class Sdr(TotalStation):
             :param separator: field separator in input (string/regexp)
         """
         super(Sdr, self).__init__(fname, separator)
-        self.angle_unit = 'DEG'     # 1-DEG, 2-GON, 3-MIL
-        self.distance_unit = 1        # 1-meter, 2-feet
-        self.coord_order = 2        # 1-North, East, 2-East, North
-        self.angle_dir = 1            # 1-Clockwise, 2-Counter clockwise
-        self.pn_length = 4            # point id length (default srd20)
-        self.th = None                # default target height
+        self.angle_unit = 'DEG'  # 1-DEG, 2-GON, 3-MIL
+        self.distance_unit = 1  # 1-meter, 2-feet
+        self.coord_order = 2  # 1-North, East, 2-East, North
+        self.angle_dir = 1  # 1-Clockwise, 2-Counter clockwise
+        self.pn_length = 4  # point id length (default srd20)
+        self.th = None  # default target height
 
     def dist(self, value):
         """ Change distance to meters
@@ -338,7 +345,7 @@ class Sdr(TotalStation):
         if self.distance_unit == 2:
             return value * FOOT2M
         return value
- 
+
     def angle(self, value):
         """ Convert angle to Gon
 
@@ -372,9 +379,9 @@ class Sdr(TotalStation):
             if line_code == '00':
                 # header
                 if buf[4:9] == 'SDR33':
-                    pn_length = 16
+                    self.pn_length = 16
                 elif buf[4:9] == 'SDR20':
-                    pn_length = 4
+                    self.pn_length = 4
                 else:
                     return None
                 w = int(buf[40:41])
@@ -485,9 +492,11 @@ class Sdr(TotalStation):
                     res['station'] = None
                     return res
 
+
 class SurvCE(TotalStation):
     """ Class to import SurvCE rw5 files
     """
+
     def __init__(self, fname, separator=','):
         """ Initialize a new instance
 
@@ -496,11 +505,11 @@ class SurvCE(TotalStation):
         """
         super(SurvCE, self).__init__(fname, separator)
         self.angle_unit = 'PDEG'
-        self.distance_unit = 1       # 0-feet 1-meter
+        self.distance_unit = 1  # 0-feet 1-meter
         self.res = {}
-        self.ih = None                # instrument height
-        self.th = None                # target height
-        self.dist_mul = 1.0            # distance convert constant to meter
+        self.ih = None  # instrument height
+        self.th = None  # target height
+        self.dist_mul = 1.0  # distance convert constant to meter
 
     def parse_next(self):
         """ Load next observation, station
@@ -515,7 +524,7 @@ class SurvCE(TotalStation):
             if buf is None:
                 return None
             line_code = buf[0]
-            if line_code == 'GPS':            # log, lan
+            if line_code == 'GPS':  # log, lan
                 for field in buf[1:]:
                     fcode = field[0:2]
                     if fcode == 'PN':
@@ -553,17 +562,17 @@ class SurvCE(TotalStation):
                     elif fcode == 'FP':
                         self.res['point_id'] = field[2:].strip()
                     elif fcode == 'AL':
-                        self.res['hz'] = 400 - Angle(float(field[2:].strip()), \
-                            self.angle_unit).get_angle('GON')
+                        self.res['hz'] = 400 - Angle(float(field[2:].strip()),
+                                                     self.angle_unit).get_angle('GON')
                     elif fcode == 'AR':
-                        self.res['hz'] = Angle(float(field[2:].strip()), \
-                            self.angle_unit).get_angle('GON')
+                        self.res['hz'] = Angle(float(field[2:].strip()),
+                                               self.angle_unit).get_angle('GON')
                     elif fcode == 'ZE':
-                        self.res['v'] = Angle(float(field[2:].strip()), \
-                            self.angle_unit).get_angle('GON')
+                        self.res['v'] = Angle(float(field[2:].strip()),
+                                              self.angle_unit).get_angle('GON')
                     elif fcode == 'VA':
-                        self.res['hz'] = 100 - Angle(float(field[2:].strip()), \
-                            self.angle_unit).get_angle('GON')
+                        self.res['hz'] = 100 - Angle(float(field[2:].strip()),
+                                                     self.angle_unit).get_angle('GON')
                     elif fcode == 'SD':
                         self.res['sd'] = float(field[2:].strip()) * self.dist_mul
                     elif fcode == '--':
@@ -598,8 +607,8 @@ class SurvCE(TotalStation):
                     elif fcode == 'BP':
                         self.res['point_id'] = field[2:].strip()
                     elif fcode == 'BS':
-                        self.res['hz'] = Angle(float(field[2:].strip()), \
-                            self.angle_unit).get_angle('GON')
+                        self.res['hz'] = Angle(float(field[2:].strip()),
+                                               self.angle_unit).get_angle('GON')
                     # BC ignored
                 return self.res
             elif line_code == 'LS':
@@ -619,9 +628,11 @@ class SurvCE(TotalStation):
                             self.dist_mul = 1.0
                     # other codes are ignored (AD/SF/EC/EO)
 
+
 class Stonex(TotalStation):
     """ Class to import STONEX ascii file
     """
+
     def __init__(self, fname, separator=','):
         """ Initialize a new instance
 
@@ -630,7 +641,7 @@ class Stonex(TotalStation):
         """
         super(Stonex, self).__init__(fname, separator)
         self.angle_unit = 'GON'
-        self.distance_unit = 1       # 0-feet 1-meter
+        self.distance_unit = 1  # 0-feet 1-meter
         self.res = {}
 
     def parse_next(self):
@@ -651,37 +662,37 @@ class Stonex(TotalStation):
                 else:
                     return None
             if buf[0] not in ('K', 'E', 'B', 'C', 'L'):
-                continue    # skip unknown/job lines
+                continue  # skip unknown/job lines
             point_id = buf[1].strip()
-            if 'point_id' in self.res.keys() and self.res['point_id'] != point_id:
-                last_res = self.res    # save previous data to return
-                self.res = {}        # clear for new point
+            if 'point_id' in list(self.res.keys()) and self.res['point_id'] != point_id:
+                last_res = self.res  # save previous data to return
+                self.res = {}  # clear for new point
             if buf[0] == 'K':
                 self.res['point_id'] = point_id
                 self.res['n'] = float(buf[2].strip())
                 self.res['e'] = float(buf[3].strip())
                 self.res['z'] = float(buf[4].strip())
                 self.res['hz'] = Angle(float(buf[5].strip()) / 10000.0, self.angle_unit).get_angle('GON')
-                self.res['th'] = float(buf[6].strip()) 
+                self.res['th'] = float(buf[6].strip())
                 self.res['station'] = 'station'
-            elif buf[0] == 'E':        # observation
+            elif buf[0] == 'E':  # observation
                 self.res['point_id'] = point_id
                 self.res['hz'] = Angle(float(buf[2].strip()) / 10000.0, self.angle_unit).get_angle('GON')
                 self.res['v'] = Angle(float(buf[3].strip()) / 10000.0, self.angle_unit).get_angle('GON')
                 self.res['th'] = float(buf[4].strip())
                 self.res['sd'] = float(buf[6].strip())
                 self.res['station'] = None
-            elif buf[0] == 'B':        # coordinate record
+            elif buf[0] == 'B':  # coordinate record
                 self.res['point_id'] = point_id
                 self.res['n'] = float(buf[2].strip())
                 self.res['e'] = float(buf[3].strip())
                 self.res['z'] = float(buf[4].strip())
-            elif buf[0] == 'C':        # coordinate + ????
+            elif buf[0] == 'C':  # coordinate + ????
                 self.res['point_id'] = point_id
                 self.res['n'] = float(buf[2].strip())
                 self.res['e'] = float(buf[3].strip())
                 self.res['z'] = float(buf[4].strip())
-            elif buf[0] == 'L':        # coordinate + hz ???
+            elif buf[0] == 'L':  # coordinate + hz ???
                 self.res['point_id'] = point_id
                 self.res['n'] = float(buf[2].strip())
                 self.res['e'] = float(buf[3].strip())
@@ -692,9 +703,11 @@ class Stonex(TotalStation):
             if len(last_res):
                 return last_res
 
+
 class Dump(TotalStation):
     """ Class to import geoeasy dump ascii file
     """
+
     def __init__(self, fname, separator='[;\t ]'):
         """ Initialize a new instance
 
@@ -702,10 +715,11 @@ class Dump(TotalStation):
             :param separator: field separator in input (string/regexp)
         """
         super(Dump, self).__init__(fname, separator)
-        self.last_station = ""    #stores last used station
+        self.last_station = ""  # stores last used station
         self.stack = None
 
-    def convAngle(self, val):
+    @staticmethod
+    def conv_angle(val):
         """ Convert angle from DMS to radians if necessary
 
             :param val: angle value (string) radian or DMS (e.g. 12-23-34)
@@ -720,7 +734,8 @@ class Dump(TotalStation):
                 ret = Angle(val, 'DMS').get_angle('GON')
         return ret
 
-    def convDist(self, val):
+    @staticmethod
+    def conv_dist(val):
         """ Convert angle from DMS to radians if necessary
 
             :param val: angle value (string) radian or DMS (e.g. 12-23-34)
@@ -759,27 +774,25 @@ class Dump(TotalStation):
                 self.last_station = station_id
                 res['point_id'] = station_id
                 res['station'] = 'station'
-                res['ih'] = self.convDist(buf[6])
+                res['ih'] = self.conv_dist(buf[6])
                 # save observation
-                self.stack = {}
-                self.stack['point_id'] = buf[1].strip()
-                self.stack['hz'] = self.convAngle(buf[2])
-                self.stack['v'] = self.convAngle(buf[3])
-                self.stack['sd'] = self.convDist(buf[4])
-                self.stack['th'] = self.convDist(buf[5])
+                self.stack = {'point_id': buf[1].strip(), 'hz': self.conv_angle(buf[2]), 'v': self.conv_angle(buf[3]),
+                              'sd': self.conv_dist(buf[4]), 'th': self.conv_dist(buf[5])}
             else:
                 # observation from the same station
                 res['point_id'] = buf[1].strip()
                 res['station'] = ''
-                res['hz'] = self.convAngle(buf[2])
-                res['v'] = self.convAngle(buf[3])
-                res['sd'] = self.convDist(buf[4])
-                res['th'] = self.convDist(buf[5])
+                res['hz'] = self.conv_angle(buf[2])
+                res['v'] = self.conv_angle(buf[3])
+                res['sd'] = self.conv_dist(buf[4])
+                res['th'] = self.conv_dist(buf[5])
             return res
+
 
 class Idex(TotalStation):
     """ Class to import Leica IDEX format
     """
+
     def __init__(self, fname, separator=r'[,\(\)]'):
         """ Initialize a new instance
 
@@ -808,7 +821,7 @@ class Idex(TotalStation):
         while True:
             buf = self.get_line()
             if buf is None:
-                return None
+                return
             buf = self.buf_strip(buf)
             if len(buf) == 0:
                 continue
@@ -827,14 +840,16 @@ class Idex(TotalStation):
             elif buf[0] == "END HEADER":
                 self.header = False
                 break
- 
-    def buf_strip(self, buf, keep_empty=False):
+
+    @staticmethod
+    def buf_strip(buf, keep_empty=False):
         """ Strip list items & remove empty items
 
             :param buf: input list
+            :param keep_empty: whether to retain empty items in the list
             :return: list with stipped items
         """
-        return [x.strip(' \t";\'') for x in buf \
+        return [x.strip(' \t";\'') for x in buf
                 if keep_empty or len(x.strip(' \t";\''))]
 
     def parse_next(self):
@@ -849,7 +864,7 @@ class Idex(TotalStation):
             buf = self.get_line()
             if buf is None:
                 return None
-            buf = self.buf_strip(buf, True) # keep empty items
+            buf = self.buf_strip(buf, True)  # keep empty items
             if len(buf) == 0:
                 continue
             if buf[0] == "DATABASE":
@@ -909,23 +924,24 @@ class Idex(TotalStation):
                 res['point_id'] = buf[1]
                 res['station'] = ''
                 res['hz'] = Angle(float(buf[3]), self.angular).get_angle('GON') \
-                            if len(buf[3]) else None
+                    if len(buf[3]) else None
                 res['v'] = Angle(float(buf[4]), self.angular).get_angle('GON') \
-                           if len(buf[4]) else None
+                    if len(buf[4]) else None
                 res['sd'] = float(buf[5]) if len(buf[5]) else None
                 res['th'] = float(buf[6]) if len(buf[6]) else None
                 return res
-                
+
+
 if __name__ == "__main__":
     """
         unit test
     """
     import sys
     import os
-    
+
     if len(sys.argv) > 1:
         # maps extensions to classes; first item in list is the class
-        # and second, if present, is second argument for class 
+        # and second, if present, is second argument for class
         # constructor
         ext2class = {
             '.idx': [Idex],
@@ -936,13 +952,14 @@ if __name__ == "__main__":
             '.job': [JobAre, '='],
             '.crd': [Sdr, None]
         }
-        # find the class 
+        # find the class
         try:
             toexec = ext2class[os.path.splitext(sys.argv[1])[1].lower()]
         except KeyError:
-            print 'Unknown extension for file', sys.argv[1]
+            # fix_print_with_import
+            print('Unknown extension for file', sys.argv[1])
             sys.exit(1)
-        
+
         if len(sys.argv) == 3:
             # the user may provide an argument to pass to the class
             ts = toexec[0](sys.argv[1], sys.argv[2])
@@ -954,20 +971,22 @@ if __name__ == "__main__":
             ts = toexec[0](sys.argv[1], toexec[1])
     else:
         ts = Idex('samples/test.idx')
-        #ts = Dump('samples/xxx.dmp')
-        #ts = SurvCE('samples/EBO-1739.rw5')
-        #ts = Stonex('samples/PAJE2OB.DAT')
-        #ts = LeicaGsi('samples/tata3.gsi', ' ')
-        #ts = JobAre('samples/test1.job', '=')
-        #ts = Sdr('samples/PAJE04.crd', None)
-    
+        # ts = Dump('samples/xxx.dmp')
+        # ts = SurvCE('samples/EBO-1739.rw5')
+        # ts = Stonex('samples/PAJE2OB.DAT')
+        # ts = LeicaGsi('samples/tata3.gsi', ' ')
+        # ts = JobAre('samples/test1.job', '=')
+        # ts = Sdr('samples/PAJE04.crd', None)
+
     if ts.open() != 0:
-        print "Open error"
+        # fix_print_with_import
+        print("Open error")
     else:
         while True:
             r = ts.parse_next()
             if r is None:
                 break
             if len(r) > 0:
-                print r
+                # fix_print_with_import
+                print(r)
         ts.close()

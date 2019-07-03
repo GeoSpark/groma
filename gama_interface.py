@@ -7,19 +7,20 @@
 
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
+from __future__ import absolute_import
 
-import math
+from qgis.PyQt.QtCore import QDir, QFile, QFileInfo, QIODevice, QTemporaryFile, QProcess, QSettings
+from qgis.PyQt.QtXml import QDomDocument, QXmlSimpleReader, QXmlInputSource
+
 # surveying calculation modules
-import config
-from base_classes import *
-from surveying_util import *
-from PyQt4.QtCore import QDir, QFile, QFileInfo, QIODevice, QTemporaryFile, \
-                        QProcess, QSettings
-from PyQt4.QtXml import QDomDocument, QXmlSimpleReader, QXmlInputSource
+from . import config
+from .surveying_util import *
+
 
 class GamaInterface(object):
     """ Interface class to GNU Gama
     """
+
     def __init__(self, dimension=2, probability=0.95, stdev_angle=3, stdev_dist=3, stdev_dist1=3):
         """ Initialize a new GamaInterface instance.
 
@@ -36,17 +37,17 @@ class GamaInterface(object):
         self.stdev_dist1 = stdev_dist1
         self.points = []
         self.observations = []
-        gama_path = QSettings().value("SurveyingCalculation/gama_path",config.gama_path)
+        gama_path = QSettings().value("SurveyingCalculation/gama_path", config.gama_path)
         if QFileInfo(gama_path).exists():
             gama_prog = gama_path
         else:
             # get operating system dependent file name of gama_local
-            plugin_dir = QDir().cleanPath( QFileInfo(__file__).absolutePath() )
+            plugin_dir = QDir().cleanPath(QFileInfo(__file__).absolutePath())
             gama_prog = QDir(plugin_dir).absoluteFilePath("gama-local")
             if not QFileInfo(gama_prog).exists():
-                if QFileInfo(gama_prog+".exe").exists():
+                if QFileInfo(gama_prog + ".exe").exists():
                     gama_prog += '.exe'
-                elif QFileInfo(gama_prog+"64.exe").exists():
+                elif QFileInfo(gama_prog + "64.exe").exists():
                     gama_prog += '64.exe'
                 else:
                     gama_prog = None
@@ -100,7 +101,7 @@ class GamaInterface(object):
         if adj == 0 or len(self.observations) == 0:
             # no unknowns or observations
             return None
-        
+
         doc = QDomDocument()
         doc.appendChild(doc.createComment('Gama XML created by SurveyingCalculation plugin for QGIS'))
         gama_local = doc.createElement('gama-local')
@@ -126,7 +127,7 @@ class GamaInterface(object):
         parameters.setAttribute('update-constrained-coordinates', 'yes')
         network.appendChild(parameters)
         points_observations = doc.createElement('points-observations')
-        points_observations.setAttribute('distance-stdev', str(self.stdev_dist) + ' ' + str(self.stdev_dist1)) 
+        points_observations.setAttribute('distance-stdev', str(self.stdev_dist) + ' ' + str(self.stdev_dist1))
         points_observations.setAttribute('direction-stdev', str(self.stdev_angle))
         points_observations.setAttribute('angle-stdev', str(math.sqrt(self.stdev_angle * 2)))
         points_observations.setAttribute('zenith-angle-stdev', str(self.stdev_angle))
@@ -218,19 +219,22 @@ class GamaInterface(object):
                         tmp = doc.createElement('dh')
                         tmp.setAttribute('from', st_id)
                         tmp.setAttribute('to', o.point_id)
-						# TODO hibaterjedes
+                        # TODO hibaterjedes
                         tmp.setAttribute('stdev', '1')
                         sz = math.sin(o.v.get_angle())
                         w = self.stdev_dist + self.stdev_dist1 * o.d.d / 1000
-                        ro_cc = 200 * 100 * 100 /math.pi
+                        ro_cc = 200 * 100 * 100 / math.pi
                         if o.d.mode == 'SD':
                             cz = math.cos(o.v.get_angle())
-                            tmp.setAttribute('val', str(o.d.d * cz + ih -th))
-                            tmp.setAttribute('stdev', str(math.sqrt(cz ** 2 * w ** 2 + (o.d.d * 1000) ** 2 * sz ** 2 * (self.stdev_angle / RO_CC) ** 2)))
+                            tmp.setAttribute('val', str(o.d.d * cz + ih - th))
+                            tmp.setAttribute('stdev', str(math.sqrt(
+                                cz ** 2 * w ** 2 + (o.d.d * 1000) ** 2 * sz ** 2 * (self.stdev_angle / RO_CC) ** 2)))
                         else:
                             tz = math.tan(o.v.get_angle())
-                            tmp.setAttribute('val', str(o.d.d / math.tan(o.v.get_angle()) + ih -th))
-                            tmp.setAttribute('stdev', str(math.sqrt((1 / tz) ** 2 * w ** 2 + (o.d.d * 1000) ** 2 * (o.d.d * 1000) ** 2 * (1 / sz ** 2) ** 2 * (self.stdev_angle / RO_CC) ** 2)))
+                            tmp.setAttribute('val', str(o.d.d / math.tan(o.v.get_angle()) + ih - th))
+                            tmp.setAttribute('stdev', str(math.sqrt(
+                                (1 / tz) ** 2 * w ** 2 + (o.d.d * 1000) ** 2 * (o.d.d * 1000) ** 2 * (
+                                            1 / sz ** 2) ** 2 * (self.stdev_angle / RO_CC) ** 2)))
                         hd.appendChild(tmp)
                 elif self.dimension == 3:
                     # 3d
@@ -265,7 +269,7 @@ class GamaInterface(object):
                     # unknown dimension
                     return None
         # generate temp file name
-        tmpf = QTemporaryFile( QDir.temp().absoluteFilePath('w') )
+        tmpf = QTemporaryFile(QDir.temp().absoluteFilePath('w'))
         tmpf.open(QIODevice.WriteOnly)
         tmpf.close()
         tmp_name = tmpf.fileName()
@@ -273,25 +277,25 @@ class GamaInterface(object):
         if f.open(QIODevice.WriteOnly):
             f.write(doc.toByteArray())
             f.close()
-       
+
         # run gama-local
         if self.gama_prog is None:
             return None
-        status = QProcess.execute(self.gama_prog, [ tmp_name+'.xml', '--text',
-            tmp_name+'.txt', '--xml', tmp_name+'out.xml'])
+        status = QProcess.execute(self.gama_prog, [tmp_name + '.xml', '--angles', '360', '--text',
+                                                   tmp_name + '.txt', '--xml', tmp_name + 'out.xml'])
         if status != 0:
             return None
-        
+
         xmlParser = QXmlSimpleReader()
         xmlFile = QFile(tmp_name + 'out.xml')
         xmlInputSource = QXmlInputSource(xmlFile)
-        doc.setContent(xmlInputSource,xmlParser)
-        
-        f_txt = QFile(tmp_name + '.txt') 
+        doc.setContent(xmlInputSource, xmlParser)
+
+        f_txt = QFile(tmp_name + '.txt')
         f_txt.open(QIODevice.ReadOnly)
         res = f_txt.readAll().data()
         f_txt.close()
-        
+
         # store coordinates
         adj_nodes = doc.elementsByTagName('adjusted')
         if adj_nodes.count() < 1:
@@ -316,8 +320,9 @@ class GamaInterface(object):
         f_txt.remove()
         f.remove()
         xmlFile.remove()
-        
+
         return res
+
 
 if __name__ == "__main__":
     """
@@ -331,43 +336,43 @@ if __name__ == "__main__":
     gi.add_point(Point('5', -60.35, 387.99))
     gi.add_observation(PolarObservation('1', 'station'))
     gi.add_observation(PolarObservation('2', None, Angle('42-56-02', 'DMS'),
-        Angle('87-35-39', 'DMS'), Distance(211.886, 'SD')))
+                                        Angle('87-35-39', 'DMS'), Distance(211.886, 'SD')))
     gi.add_observation(PolarObservation('3', None, Angle('347-24-35', 'DMS'),
-        Angle('88-54-24', 'DMS'), Distance(455.774, 'SD')))
+                                        Angle('88-54-24', 'DMS'), Distance(455.774, 'SD')))
     gi.add_observation(PolarObservation('4', None, Angle('324-06-32', 'DMS'),
-        Angle('90-00-36', 'DMS'), Distance(403.150, 'SD')))
+                                        Angle('90-00-36', 'DMS'), Distance(403.150, 'SD')))
     gi.add_observation(PolarObservation('5', None, Angle('304-05-19', 'DMS'),
-        Angle('89-58-23', 'DMS'), Distance(392.665, 'SD')))
+                                        Angle('89-58-23', 'DMS'), Distance(392.665, 'SD')))
     gi.add_observation(PolarObservation('2', 'station'))
     gi.add_observation(PolarObservation('1', None, Angle('304-20-43', 'DMS'),
-        Angle('92-27-19', 'DMS'), Distance(211.894, 'SD')))
+                                        Angle('92-27-19', 'DMS'), Distance(211.894, 'SD')))
     gi.add_observation(PolarObservation('5', None, Angle('359-18-19', 'DMS'),
-        Angle('91-03-52', 'DMS'), Distance(473.977, 'SD')))
+                                        Angle('91-03-52', 'DMS'), Distance(473.977, 'SD')))
     gi.add_observation(PolarObservation('4', None, Angle('15-41-16', 'DMS'),
-        Angle('91-14-36', 'DMS'), Distance(417.565, 'SD')))
+                                        Angle('91-14-36', 'DMS'), Distance(417.565, 'SD')))
     gi.add_observation(PolarObservation('3', None, Angle('41-22-11', 'DMS'),
-        Angle('90-02-29', 'DMS'), Distance(378.506, 'SD')))
+                                        Angle('90-02-29', 'DMS'), Distance(378.506, 'SD')))
     gi.add_observation(PolarObservation('5', 'station'))
     gi.add_observation(PolarObservation('4', None, Angle('324-16-52', 'DMS'),
-        Angle('90-06-46', 'DMS'), Distance(138.703, 'SD')))
+                                        Angle('90-06-46', 'DMS'), Distance(138.703, 'SD')))
     gi.add_observation(PolarObservation('3', None, Angle('329-36-15', 'DMS'),
-        Angle('88-27-29', 'DMS'), Distance(318.672, 'SD')))
+                                        Angle('88-27-29', 'DMS'), Distance(318.672, 'SD')))
     gi.add_observation(PolarObservation('2', None, Angle('22-20-43', 'DMS'),
-        Angle('88-55-56', 'DMS'), Distance(473.959, 'SD')))
+                                        Angle('88-55-56', 'DMS'), Distance(473.959, 'SD')))
     gi.add_observation(PolarObservation('1', None, Angle('48-32-26', 'DMS'),
-        Angle('90-01-16', 'DMS'), Distance(392.662, 'SD')))
+                                        Angle('90-01-16', 'DMS'), Distance(392.662, 'SD')))
     gi.add_observation(PolarObservation('4', 'station'))
     gi.add_observation(PolarObservation('2', None, Angle('346-38-25', 'DMS'),
-        Angle('88-45-44', 'DMS'), Distance(417.543, 'SD')))
+                                        Angle('88-45-44', 'DMS'), Distance(417.543, 'SD')))
     gi.add_observation(PolarObservation('1', None, Angle('16-28-34', 'DMS'),
-        Angle('89-59-40', 'DMS'), Distance(403.146, 'SD')))
+                                        Angle('89-59-40', 'DMS'), Distance(403.146, 'SD')))
     gi.add_observation(PolarObservation('5', None, Angle('92-11-53', 'DMS'),
-        Angle('89-57-38', 'DMS'), Distance(138.704, 'SD')))
+                                        Angle('89-57-38', 'DMS'), Distance(138.704, 'SD')))
     gi.add_observation(PolarObservation('3', 'station'))
     gi.add_observation(PolarObservation('5', None, Angle('59-45-52', 'DMS'),
-        Angle('91-33-41', 'DMS'), Distance(318.673, 'SD')))
+                                        Angle('91-33-41', 'DMS'), Distance(318.673, 'SD')))
     gi.add_observation(PolarObservation('1', None, Angle('2-01-09', 'DMS'),
-        Angle('91-05-51', 'DMS'), Distance(455.772, 'SD')))
+                                        Angle('91-05-51', 'DMS'), Distance(455.772, 'SD')))
     gi.add_observation(PolarObservation('2', None, Angle('334-33-23', 'DMS'),
-        Angle('89-57-40', 'DMS'), Distance(378.487, 'SD')))
+                                        Angle('89-57-40', 'DMS'), Distance(378.487, 'SD')))
     gi.adjust()

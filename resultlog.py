@@ -7,10 +7,12 @@
 
 .. moduleauthor:: Zoltan Siki <siki@agt.bme.hu>
 """
+from builtins import range
+from builtins import object
 import datetime
 import time
 
-from PyQt4.QtCore import QDir, QFile, QIODevice, QTextStream
+from qgis.PyQt.QtCore import QDir, QFile, QIODevice, QTextStream
 
 class ResultLog(object):
     """ File based logging for Surveying Calculations. Events & calculation results are logged into this file.

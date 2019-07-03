@@ -7,13 +7,14 @@
 
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
+from __future__ import absolute_import
 
-from PyQt4.QtGui import QDialog, QMessageBox
+from qgis.PyQt.QtWidgets import QDialog, QMessageBox
 #from PyQt4.QtCore import SIGNAL, QCoreApplication
 
-from add_new_point import Ui_AddNewPointDialog
-from base_classes import *
-from surveying_util import *
+from .add_new_point import Ui_AddNewPointDialog
+from .base_classes import *
+from .surveying_util import *
 
 class NewPointDialog(QDialog):
     """ Class for new point dialog

@@ -6,17 +6,20 @@
 
 .. moduleauthor: Zoltan Siki <siki@agt.bme.hu>
 """
+from __future__ import absolute_import
+from builtins import range
 import platform
 import webbrowser
-from PyQt4.QtGui import QDialog, QStandardItem, QFont, QListWidgetItem, QMessageBox
-from PyQt4.QtCore import Qt, QSettings
+from qgis.PyQt.QtWidgets import QDialog, QListWidgetItem, QMessageBox
+from qgis.PyQt.QtGui import QStandardItem, QFont
+from qgis.PyQt.QtCore import Qt, QSettings
 
-import config
-from traverse_calc import Ui_TraverseCalcDialog
-from base_classes import *
-from surveying_util import *
-from calculation import Calculation
-from resultlog import *
+from . import config
+from .traverse_calc import Ui_TraverseCalcDialog
+from .base_classes import *
+from .surveying_util import *
+from .calculation import Calculation
+from .resultlog import *
 
 class TraverseDialog(QDialog):
     """ Class for traverse calculation dialog

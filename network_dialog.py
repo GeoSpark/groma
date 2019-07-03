@@ -6,16 +6,18 @@
 
 .. moduleauthor: Zoltan Siki <siki@agt.bme.hu>
 """
+from __future__ import absolute_import
 import platform
 import webbrowser
-from PyQt4.QtGui import QDialog, QFont, QMessageBox
-from PyQt4.QtCore import QSettings
+from qgis.PyQt.QtWidgets import QDialog, QMessageBox
+from qgis.PyQt.QtGui import QFont
+from qgis.PyQt.QtCore import QSettings
 
-import config
-from network_calc import Ui_NetworkCalcDialog
-from base_classes import *
-from surveying_util import *
-from gama_interface import *
+from . import config
+from .network_calc import Ui_NetworkCalcDialog
+from .base_classes import *
+from .surveying_util import *
+from .gama_interface import *
 
 class NetworkDialog(QDialog):
     """ Class for network calculation dialog

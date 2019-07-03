@@ -18,21 +18,22 @@ Variables set:
     :max_iteration: maximal number of iterations for area division
     :gama_path: full path to gama-local, default plug-in dir
 """
-from PyQt4.QtCore import QDir, QFileInfo
+from qgis.PyQt.QtCore import QDir, QFileInfo
 
 # dialogs
 fontname = 'DejaVu Sans Mono'
 fontsize = 9
 #
-homedir = QDir().cleanPath( QFileInfo(__file__).absolutePath() )
+homedir = QDir().cleanPath(QFileInfo(__file__).absolutePath())
 # plot template
 template_dir = QDir(homedir).absoluteFilePath("template")
 # logging
 log_path = '/tmp/log.log'
 # line tool
-line_tolerance = 1   # tolerance in layer units
+line_tolerance = 1  # tolerance in layer units
 # area division
-area_tolerance = 0.5 # tolerance in layer unirs
+area_tolerance = 0.5  # tolerance in layer units
 max_iteration = 100  # maximum number of iteration in area division
 # GNU Gama - full path to gama-local
 gama_path = '/home/siki/Downloads/gama-1.15/bin/gama-local'
+# TODO: Add config for preferred distance and angle units (stored and displayed).

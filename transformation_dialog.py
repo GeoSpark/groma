@@ -7,16 +7,19 @@
 
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
+from __future__ import absolute_import
+from builtins import range
 import platform
 import webbrowser
-from PyQt4.QtGui import QDialog, QFileDialog, QFont, QMessageBox
-from PyQt4.QtCore import SIGNAL, QCoreApplication, QSettings
+from qgis.PyQt.QtWidgets import QDialog, QFileDialog, QMessageBox
+from qgis.PyQt.QtGui import QFont
+from qgis.PyQt.QtCore import QCoreApplication, QSettings
 
-import config
-from transformation_calc import Ui_TransformationCalcDialog
-from base_classes import *
-from surveying_util import *
-from calculation import *
+from . import config
+from .transformation_calc import Ui_TransformationCalcDialog
+from .base_classes import *
+from .surveying_util import *
+from .calculation import *
 
 class TransformationDialog(QDialog):
     """ Class for transformation calculation dialog
@@ -39,7 +42,7 @@ class TransformationDialog(QDialog):
         self.ui.CalcButton.clicked.connect(self.onCalcButton)
         self.ui.HelpButton.clicked.connect(self.onHelpButton)
         # coordinate list changed
-        self.connect(self.ui.FromLayerComboBox, SIGNAL("currentIndexChanged(const QString&)"), self.fill_common)
+        self.ui.FromLayerComboBox.currentIndexChanged.connect(self.fill_common)
 
     def showEvent(self, event):
         """ set up initial state of dialog
@@ -94,7 +97,7 @@ class TransformationDialog(QDialog):
     def onToFileButton(self):
         """ Select target shape file
         """
-        fname = QFileDialog.getOpenFileName(None, tr('Coordinate list'),
+        fname, __ = QFileDialog.getOpenFileName(None, tr('Coordinate list'),
             filter= tr('Coordinate list file (*.shp);;'))
         if fname:
             self.ui.ToShapeEdit.setText(fname)

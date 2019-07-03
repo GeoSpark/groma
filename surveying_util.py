@@ -7,9 +7,11 @@
 
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
+from __future__ import absolute_import
 from qgis.core import *
 import re
-from base_classes import *
+from .base_classes import *
+
 
 def get_namelist(pattern):
     """ Find layers matching name with the pattern.
@@ -18,13 +20,15 @@ def get_namelist(pattern):
         :returns: list of matching names or None
     """
     w = []
-    layermap = QgsMapLayerRegistry.instance().mapLayers()
-    for name, layer in layermap.iteritems():
-        if layer.type() == QGis.Point and re.search(pattern, layer.name()):
+    layermap = QgsProject.instance().mapLayers()
+    for name, layer in layermap.items():
+        # if layer.geometryType() == QgsWkbTypes.PointGeometry and re.search(pattern, layer.name()):
+        if re.search(pattern, layer.name()):
             w.append(layer.name())
     if len(w):
         return w
     return None
+
 
 def get_coordlist():
     """ Find the coordinate list point shape in the actual project.
@@ -33,6 +37,7 @@ def get_coordlist():
     """
     return get_namelist('^coord_')
 
+
 def get_fblist():
     """ Find the fieldbook tables in the actual project.
 
@@ -40,20 +45,22 @@ def get_fblist():
     """
     return get_namelist('^fb_')
 
+
 def get_layer_by_name(name):
     """ Look for a layer object by name.
 
         :param name: name of the layer (str)
-        :returns: layer object 
+        :returns: layer object
     """
-    layermap = QgsMapLayerRegistry.instance().mapLayers()
-    for n, layer in layermap.iteritems():
+    layermap = QgsProject.instance().mapLayers()
+    for n, layer in layermap.items():
         if layer.name() == name:
             if layer.isValid():
                 return layer
             else:
                 return None
     return None
+
 
 def get_vector_layers_by_type(ftype):
     """ Find layers by the geometry type.
@@ -62,8 +69,8 @@ def get_vector_layers_by_type(ftype):
         :returns: list of polygon layers or None
     """
     w = []
-    layermap = QgsMapLayerRegistry.instance().mapLayers()
-    for n, layer in layermap.iteritems():
+    layermap = QgsProject.instance().mapLayers()
+    for n, layer in layermap.items():
         if layer.type() == QgsMapLayer.VectorLayer:
             if layer.geometryType() == ftype:
                 w.append(layer)
@@ -71,13 +78,14 @@ def get_vector_layers_by_type(ftype):
         return w
     return None
 
+
 def get_features(layername, ftype=None, selected=False):
-    """ Create a list of selected or all features 
+    """ Create a list of selected or all features
         from a given layer possibly with given type.
 
-        :param layername: name of the layer 
+        :param layername: name of the layer
         :param ftype: type of features to add to the list (if None - all features)
-        :param selected: if True only selected features will be added to the list 
+        :param selected: if True only selected features will be added to the list
         :returns: list of feature geometries (QgsGeometry list)
     """
     w = []
@@ -96,13 +104,15 @@ def get_features(layername, ftype=None, selected=False):
         return w
     return None
 
+
 def get_fieldlist(vlayer):
     """ Create a list of fields.
 
         :param vlayer: vector layer
         :returns: list of fields
     """
-    return vlayer.pendingFields()
+    return vlayer.fields()
+
 
 def get_fieldnames(vlayer):
     """ Create a list from column names of a vector layer.
@@ -113,6 +123,7 @@ def get_fieldnames(vlayer):
     fields = get_fieldlist(vlayer)
     fieldlist = [field.name() for field in fields]
     return sorted(fieldlist)
+
 
 def get_coord(p, clist=None):
     """ Get the coordinates of a point.
@@ -132,8 +143,8 @@ def get_coord(p, clist=None):
         if lay is None:
             continue
         for feat in lay.getFeatures():
-            if feat['point_id'] ==  p:
-                #return Point(p, feat['e'], feat['n'], feat['z'], feat['pc'], feat['pt'])
+            if feat['point_id'] == p:
+                # return Point(p, feat['e'], feat['n'], feat['z'], feat['pc'], feat['pt'])
                 pp = Point(p)
                 if type(feat['e']) is float and type(feat['n']) is float:
                     pp.e = feat['e']
@@ -146,6 +157,7 @@ def get_coord(p, clist=None):
                     p.pt = feat['pt']
                 return pp
     return None
+
 
 def get_known(dimension=2, clist=None):
     """ Get list of known points.
@@ -167,14 +179,16 @@ def get_known(dimension=2, clist=None):
             continue
         for feat in lay.getFeatures():
             if (dimension == 1 and type(feat['z']) is float) or \
-               (dimension == 2 and type(feat['e']) is float and type(feat['n']) is float) or \
-               (dimension == 3 and type(feat['e']) is float and type(feat['n']) is float and type(feat['z']) is float):
+                    (dimension == 2 and type(feat['e']) is float and type(feat['n']) is float) or \
+                    (dimension == 3 and type(feat['e']) is float and type(feat['n']) is float and type(
+                        feat['z']) is float):
                 if not feat['point_id'] in plist:
                     plist.append(feat['point_id'])
     if len(plist):
         return sorted(plist)
     return None
-    
+
+
 def get_measured(dimension=2):
     """ Get list of unknown points.
 
@@ -194,9 +208,9 @@ def get_measured(dimension=2):
             pid = feat['point_id']
             p = get_coord(pid)
             if (p is None) or \
-               (dimension == 1 and p.z is None) or \
-               (dimension == 2 and (p.e is None  or p.n is None)) or \
-               (dimension == 3 and (p.e is None or p.n is None or p.z is None)):
+                    (dimension == 1 and p.z is None) or \
+                    (dimension == 2 and (p.e is None or p.n is None)) or \
+                    (dimension == 3 and (p.e is None or p.n is None or p.z is None)):
                 coord = False
             else:
                 coord = True
@@ -207,6 +221,7 @@ def get_measured(dimension=2):
     if len(plist):
         return sorted(plist)
     return None
+
 
 def get_unknown(dimension=2):
     """ Get list of measured points.
@@ -226,14 +241,15 @@ def get_unknown(dimension=2):
             pid = feat['point_id']
             p = get_coord(pid)
             if (p is None) or \
-               (dimension == 1 and p.z is None) or \
-               (dimension == 2 and (p.e is None or p.n is None)) or \
-               (dimension == 3 and (p.e is None or p.n is None or p.z is None)):
+                    (dimension == 1 and p.z is None) or \
+                    (dimension == 2 and (p.e is None or p.n is None)) or \
+                    (dimension == 3 and (p.e is None or p.n is None or p.z is None)):
                 if not pid in plist:
                     plist.append(pid)
     if len(plist):
         return sorted(plist)
     return None
+
 
 def get_stations(known=False, oriented=False):
     """ Get list of stations from fieldbooks.
@@ -253,7 +269,7 @@ def get_stations(known=False, oriented=False):
         if lay is None:
             continue
         for feat in lay.getFeatures():
-            if feat['station'] == "station":
+            if feat['station'] == 'station':
                 pid = feat['point_id']
                 if known and known_list is not None and not pid in known_list:
                     # skip unknown points
@@ -267,6 +283,7 @@ def get_stations(known=False, oriented=False):
     if len(slist):
         return sorted(slist)
     return None
+
 
 def get_targets(point_id, fieldbook, fid, known=False, polar=False):
     """ Collect observation data from one station.
@@ -284,7 +301,7 @@ def get_targets(point_id, fieldbook, fid, known=False, polar=False):
         return None
     if known:
         known_list = get_known()
-    sorted_features = sorted(lay.getFeatures(), key=lambda x: x["id"])
+    sorted_features = sorted(lay.getFeatures(), key=lambda x: x['id'])
     for feat in sorted_features:
         if feat['id'] == fid and feat['station'] == 'station' and feat['point_id'] == point_id:
             found = True
@@ -307,6 +324,7 @@ def get_targets(point_id, fieldbook, fid, known=False, polar=False):
         return sorted(obs)
     return None
 
+
 def get_station(point_id, fieldbook, fid):
     """ Create a Station instance from a fieldbook row and from the coord table.
 
@@ -317,8 +335,9 @@ def get_station(point_id, fieldbook, fid):
     """
     p = ScPoint(point_id)
     o = get_fieldbookrow(point_id, fieldbook, fid)
-    return Station(p,o)
-    
+    return Station(p, o)
+
+
 def get_target(point_id, fieldbook, fid):
     """ Create a PolarObservation instance of a target point from a fieldbook row.
 
@@ -328,6 +347,7 @@ def get_target(point_id, fieldbook, fid):
         :returns: observation on the point (PolarObservation)
     """
     return get_fieldbookrow(point_id, fieldbook, fid)
+
 
 def get_fieldbookrow(point_id, fieldbook, fid):
     """ Reads a fieldbook row and put into a PolarObservation object.
@@ -345,22 +365,23 @@ def get_fieldbookrow(point_id, fieldbook, fid):
         if feat['id'] == fid and feat['point_id'] == point_id:
             if type(feat['sd']) is float:
                 if type(feat['v']) is not float:
-                    dist = Distance(feat['sd'],"HD")
-                elif feat['v']==0.0:    # ???
-                    dist = Distance(feat['sd'],"VD")
+                    dist = Distance(feat['sd'], "HD")
+                elif feat['v'] == 0.0:  # ???
+                    dist = Distance(feat['sd'], "VD")
                 else:
-                    dist = Distance(feat['sd'],"SD")
+                    dist = Distance(feat['sd'], "SD")
             else:
                 dist = None
             o = PolarObservation(feat['point_id'],
-                ('station' if feat['station'] == 'station' else None),
-                (Angle(feat['hz'],"GON") if type(feat['hz']) is float else None),
-                (Angle(feat['v'],"GON") if type(feat['v']) is float else None),
-                dist,
-                (feat['th'] if type(feat['th']) is float else None),
-                (feat['pc'] if type(feat['pc']) is float else None))
+                                 ('station' if feat['station'] == 'station' else None),
+                                 (Angle(feat['hz'], "GON") if type(feat['hz']) is float else None),
+                                 (Angle(feat['v'], "GON") if type(feat['v']) is float else None),
+                                 dist,
+                                 (feat['th'] if type(feat['th']) is float else None),
+                                 (feat['pc'] if type(feat['pc']) is float else None))
             break
     return o
+
 
 def set_orientationangle(point_id, fieldbook, fid, angle):
     """ Sets the orientation angle(hz) of the given station in the given fieldbook.
@@ -377,9 +398,10 @@ def set_orientationangle(point_id, fieldbook, fid, angle):
     for feat in sorted_features:
         if feat['id'] == fid and feat['point_id'] == point_id:
             fid = feat.id()
-            attrs = {feat.fieldNameIndex('hz') : angle}
-            lay.dataProvider().changeAttributeValues({ fid : attrs })
+            attrs = {feat.fieldNameIndex('hz'): angle}
+            lay.dataProvider().changeAttributeValues({fid: attrs})
             return
+
 
 class ScPoint(Point):
     """
@@ -394,7 +416,7 @@ class ScPoint(Point):
         """
         if isinstance(p, Point):
             super(ScPoint, self).__init__(p.id, p.e, p.n, p.z, p.pc, p.pt)
-        elif isinstance(p, str) or isinstance(p, unicode):
+        elif isinstance(p, str) or isinstance(p, str):
             super(ScPoint, self).__init__(p)
             self.get_coord()
         else:
@@ -443,10 +465,10 @@ class ScPoint(Point):
         if lay is None:
             return False
         for feat in lay.getFeatures():
-            if feat['point_id'] ==  self.id:
+            if feat['point_id'] == self.id:
                 # set feature geometry and attributes
                 fid = feat.id()
-                attrs = {feat.fieldNameIndex('point_id') : self.id}
+                attrs = {feat.fieldNameIndex('point_id'): self.id}
                 if dimension in [2, 3]:
                     attrs[feat.fieldNameIndex('e')] = self.e
                     attrs[feat.fieldNameIndex('n')] = self.n
@@ -454,14 +476,14 @@ class ScPoint(Point):
                     attrs[feat.fieldNameIndex('z')] = self.z
                 attrs[feat.fieldNameIndex('pc')] = self.pc
                 attrs[feat.fieldNameIndex('pt')] = self.pt
-                lay.dataProvider().changeAttributeValues({ fid : attrs })
-                # feat.setGeometry(QgsGeometry.fromPoint(QgsPoint(self.e, self.n)))
-                lay.dataProvider().changeGeometryValues({ fid : QgsGeometry.fromPoint(QgsPoint(self.e, self.n)) })
+                lay.dataProvider().changeAttributeValues({fid: attrs})
+                # feat.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(self.e, self.n)))
+                lay.dataProvider().changeGeometryValues({fid: QgsGeometry.fromPointXY(QgsPointXY(self.e, self.n))})
                 return True
         # add new point
         feat = QgsFeature()
-        #feat.setFields(lay.pendingFields(), True)
-        #feat.setFields(lay.dataProvider().fields(), True)
+        # feat.setFields(lay.pendingFields(), True)
+        # feat.setFields(lay.dataProvider().fields(), True)
         fields = lay.dataProvider().fields()
         feat.setFields(fields, True)
         feat.setAttribute(feat.fieldNameIndex('point_id'), self.id)
@@ -472,10 +494,10 @@ class ScPoint(Point):
             feat.setAttribute(feat.fieldNameIndex('z'), self.z)
         feat.setAttribute(feat.fieldNameIndex('pc'), self.pc)
         feat.setAttribute(feat.fieldNameIndex('pt'), self.pt)
-        feat.setGeometry(QgsGeometry.fromPoint(QgsPoint(self.e, self.n)))
+        feat.setGeometry(QgsGeometry.fromPointXY(QgsPointXY(self.e, self.n)))
         lay.dataProvider().addFeatures([feat])
         return True
-    
+
     def set_coord(self, p):
         """ Set the coordinates.
 
