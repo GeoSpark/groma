@@ -8,6 +8,9 @@
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 
 """
+# noinspection PyUnresolvedReferences
+from qgis.core import QgsMessageLog, Qgis
+
 from . import config
 from .base_classes import *
 from .resultlog import *
@@ -71,11 +74,11 @@ class Calculation(object):
                 e = e + 2 * PISEC
             E = e / RO * ref[2]
 
-            e = Angle(e, 'SEC').get_angle(ANGLE_UNITS_STORE[config.angle_displayed])
+            e = Angle(e, 'SEC').get_angle(ANGLE_UNITS_DISP[config.angle_displayed])
             ret.append((ref[1].point_id, (ref[1].pc if ref[1].pc is not None else "-"),
-                        ref[4].get_angle(ANGLE_UNITS_STORE[config.angle_displayed]),
-                        ref[5].get_angle(ANGLE_UNITS_STORE[config.angle_displayed]),
-                        ref[3].get_angle(ANGLE_UNITS_STORE[config.angle_displayed]), ref[2], e, E))
+                        ref[4].get_angle(ANGLE_UNITS_DISP[config.angle_displayed]),
+                        ref[5].get_angle(ANGLE_UNITS_DISP[config.angle_displayed]),
+                        ref[3].get_angle(ANGLE_UNITS_DISP[config.angle_displayed]), ref[2], e, E))
         return Angle(za), ret
 
     @staticmethod
@@ -92,6 +95,9 @@ class Calculation(object):
             # Calculate the coordinates of the new point.
             e = st.p.e + obs.horiz_dist() * math.sin(b)
             n = st.p.n + obs.horiz_dist() * math.cos(b)
+            QgsMessageLog.logMessage(f'x{st.p.z}x x{st.o.th}x x{obs.v}x', 'SurveyingCalculation', level=Qgis.Info)
+            QgsMessageLog.logMessage(str(st), 'SurveyingCalculation', level=Qgis.Info)
+            QgsMessageLog.logMessage(str(obs), 'SurveyingCalculation', level=Qgis.Info)
             if st.p.z is not None and st.o.th is not None and obs.v is not None:
                 z = st.p.z + st.o.th + obs.d.d * math.cos(obs.v.get_angle())
                 if obs.th is not None:
@@ -99,9 +105,9 @@ class Calculation(object):
             else:
                 z = None
 
-            p = Point(obs.point_id, e, n, z, obs.pc)
+            p = Point(obs.point_id, e, n, z, obs.pc, obs.pt)
             ret = (p.id, (p.pc if p.pc is not None else "-"), p.e, p.n, p.z,
-                   Angle(b).get_angle(ANGLE_UNITS_STORE[config.angle_displayed]), obs.horiz_dist())
+                   Angle(b).get_angle(ANGLE_UNITS_DISP[config.angle_displayed]), obs.horiz_dist())
 
             return p, ret
         except (ValueError, TypeError, AttributeError) as e:
@@ -136,8 +142,8 @@ class Calculation(object):
         pp.pc = pc
 
         return pp, (pp.id, (pp.pc if pp.pc is not None else "-"), pp.e, pp.n,
-                    Angle(b1).get_angle(ANGLE_UNITS_STORE[config.angle_displayed]),
-                    Angle(b2).get_angle(ANGLE_UNITS_STORE[config.angle_displayed]))
+                    Angle(b1).get_angle(ANGLE_UNITS_DISP[config.angle_displayed]),
+                    Angle(b2).get_angle(ANGLE_UNITS_DISP[config.angle_displayed]))
 
     @staticmethod
     def resection(st, p1, p2, p3, obs1, obs2, obs3):
@@ -179,13 +185,13 @@ class Calculation(object):
                 rows = list()
 
                 rows.append((obs1.point_id, (obs1.pc if obs1.pc is not None else "-"), p1.e, p1.n,
-                             obs1.hz.get_angle(ANGLE_UNITS_STORE[config.angle_displayed]),
-                             alpha.get_angle(ANGLE_UNITS_STORE[config.angle_displayed])))
+                             obs1.hz.get_angle(ANGLE_UNITS_DISP[config.angle_displayed]),
+                             alpha.get_angle(ANGLE_UNITS_DISP[config.angle_displayed])))
                 rows.append((obs2.point_id, (obs2.pc if obs2.pc is not None else "-"), p2.e, p2.n,
-                             obs2.hz.get_angle(ANGLE_UNITS_STORE[config.angle_displayed]),
-                             beta.get_angle(ANGLE_UNITS_STORE[config.angle_displayed])))
+                             obs2.hz.get_angle(ANGLE_UNITS_DISP[config.angle_displayed]),
+                             beta.get_angle(ANGLE_UNITS_DISP[config.angle_displayed])))
                 rows.append((obs3.point_id, (obs3.pc if obs3.pc is not None else "-"), p3.e, p3.n,
-                             obs3.hz.get_angle(ANGLE_UNITS_STORE[config.angle_displayed]), ''))
+                             obs3.hz.get_angle(ANGLE_UNITS_DISP[config.angle_displayed]), ''))
                 rows.append((p.id, (p.pc if p.pc is not None else "-"), p.e, p.n, '', ''))
                 return p, rows
             else:

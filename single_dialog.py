@@ -327,11 +327,10 @@ class SingleDialog(QDialog):
             for i in range(self.ui.TargetList.count()):
                 targetp = self.ui.TargetList.item(i).data(Qt.UserRole)
                 to = get_target(targetp[0], targetp[1], targetp[2])
-                tp = ScPoint(targetp[0])
                 pp, row = Calculation.polarpoint(s, to)
 
                 if pp is not None:
-                    tp.set_coord(pp)
+                    tp = ScPoint(pp)
                     x.add_row(row)
 
                     if pp.z is None:

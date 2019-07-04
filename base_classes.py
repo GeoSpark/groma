@@ -19,7 +19,7 @@ RO = 180 * 60 * 60 / math.pi
 RO_CC = 200 * 100 * 100 / math.pi
 PISEC = 180 * 60 * 60
 FOOT2M = 0.3048
-USFOOT2M = 1200/3937
+USFOOT2M = 1200 / 3937
 
 ANGLE_UNITS_STORE = ('DEG', 'RAD', 'GON')
 ANGLE_UNITS_DISP = ('DMS', 'DEG', 'RAD', 'GON')
@@ -244,6 +244,9 @@ class Point(object):
         self.pc = pc
         self.pt = pt
 
+    def __repr__(self):
+        return f'Point ["{self.id}" {self.e} {self.n} {self.z} "{self.pc}" "{self.pt}"]'
+
 
 class Distance(object):
     """
@@ -265,7 +268,7 @@ class PolarObservation(object):
         Polar observation class
     """
 
-    def __init__(self, tp, station=None, hz=None, v=None, d=None, th=None, pc=None):
+    def __init__(self, tp, station=None, hz=None, v=None, d=None, th=None, pc=None, pt=None):
         """ Initialize new Polar observation object. There are two types of PolarObservation, station record and
         observation record. In station record instrument height is stored in th field, orientation angle stored in hz,
         v and d must be None
@@ -277,6 +280,7 @@ class PolarObservation(object):
             :param d: slope distance (Distance)
             :param th: target height/instrument height (float)
             :param pc: point code (string)
+            :param pt: observation type (string)
         """
         if station is not None:
             # remove distance and zenith
@@ -289,6 +293,7 @@ class PolarObservation(object):
         self.d = d
         self.th = th
         self.pc = pc
+        self.pt = pt
 
     def horiz_dist(self):
         if self.d is None:
@@ -301,6 +306,10 @@ class PolarObservation(object):
         elif self.d.mode == 'VD':
             return 0.0
         return None
+
+    def __repr__(self):
+        return f'PolarObservation ["{self.point_id}" "{self.station}" {self.hz} {self.v} {self.d} {self.th}' \
+            f' "{self.pc}" "{self.pt}"]'
 
 
 class Station(object):
@@ -315,6 +324,9 @@ class Station(object):
         """
         self.p = p
         self.o = o
+
+    def __repr__(self):
+        return f'p = {self.p} o = {self.o}'
 
 
 class Circle(object):

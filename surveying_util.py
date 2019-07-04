@@ -10,6 +10,7 @@
 # noinspection PyUnresolvedReferences
 from qgis.core import QgsProject, QgsFeature, QgsGeometry, QgsPointXY, QgsMapLayer, QgsMessageLog
 from .base_classes import *
+from . import config
 
 
 def get_namelist(pattern):
@@ -382,11 +383,14 @@ def get_fieldbookrow(point_id, fieldbook, fid):
 
             o = PolarObservation(feat['point_id'],
                                  ('station' if feat['station'] == 'station' else None),
-                                 (Angle(feat['hz'], "GON") if type(feat['hz']) is float else None),
-                                 (Angle(feat['v'], "GON") if type(feat['v']) is float else None),
+                                 (Angle(feat['hz'], ANGLE_UNITS_STORE[config.angle_stored]) if type(
+                                     feat['hz']) is float else None),
+                                 (Angle(feat['v'], ANGLE_UNITS_STORE[config.angle_stored]) if type(
+                                     feat['v']) is float else None),
                                  dist,
                                  (feat['th'] if type(feat['th']) is float else None),
-                                 (feat['pc'] if type(feat['pc']) is float else None))
+                                 (feat['pc'] if type(feat['pc']) is str else None),
+                                 (feat['pt'] if type(feat['pt']) is str else None))
             break
     return o
 
@@ -514,9 +518,12 @@ class ScPoint(Point):
 
             :param p: Point
         """
-        self.point_id = p.id
+        self.id = p.id
         self.e = p.e
         self.n = p.n
         self.z = p.z
         self.pc = p.pc
         self.pt = p.pt
+
+    def __repr__(self):
+        return f'ScPoint ["{self.id}" {self.e} {self.n} {self.z} "{self.pc}" "{self.pt}"]'

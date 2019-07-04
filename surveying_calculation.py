@@ -228,7 +228,7 @@ class SurveyingCalculation(object):
         """
         ofname, __ = QFileDialog.getSaveFileName(self.iface.mainWindow(),
                                                  tr('New fieldbook'),
-                                                 filter=tr('Fieldbook file (*.dbf)'))
+                                                 filter=tr('Fieldbook file (*.sqlite)'))
         if not ofname:
             return
         if QRegExp('fb_').indexIn(QFileInfo(ofname).baseName()):
@@ -238,9 +238,9 @@ class SurveyingCalculation(object):
                                 QDir().separator() + QFileInfo(ofname).baseName())
         tempbase = QDir.cleanPath(self.plugin_dir + QDir().separator() +
                                   'template' + QDir().separator() + 'fb_template')
-        for ext in ['.dbf']:
+        for ext in ['.sqlite']:
             QFile(tempbase + ext).copy(ofbase + ext)
-        fb = QgsVectorLayer(ofbase + '.dbf', QFileInfo(ofbase).baseName(), 'ogr')
+        fb = QgsVectorLayer(ofbase + '.sqlite', QFileInfo(ofbase).baseName(), 'ogr')
         if fb.isValid():
             QgsProject.instance().addMapLayer(fb)
 
@@ -273,7 +273,7 @@ class SurveyingCalculation(object):
             ofname, __ = QFileDialog.getSaveFileName(self.iface.mainWindow(),
                                                      tr('QGIS fieldbook'),
                                                      QFileInfo(fname).absolutePath(),
-                                                     filter=tr('DBF file (*.dbf)'))
+                                                     filter=tr('Sqlite file (*.sqlite)'))
             if not ofname:
                 return
             # remember last input dir
@@ -284,12 +284,13 @@ class SurveyingCalculation(object):
             if QRegExp('fb_').indexIn(QFileInfo(ofname).baseName()):
                 ofname = QDir.cleanPath(QFileInfo(ofname).absolutePath() +
                                         QDir().separator() + 'fb_' + QFileInfo(ofname).fileName())
-            # extension is .dbf?
-            if QRegExp(r'\.dbf$', Qt.CaseInsensitive).indexIn(ofname) == -1:
-                ofname += '.dbf'
+
+            if QRegExp(r'\.sqlite', Qt.CaseInsensitive).indexIn(ofname) == -1:
+                ofname += '.sqlite'
             tempname = QDir.cleanPath(self.plugin_dir + QDir().separator() +
-                                      'template' + QDir().separator() + 'fb_template.dbf')
+                                      'template' + QDir().separator() + 'fb_template.sqlite')
             if not QFile(tempname).copy(ofname):
+                # TODO: Allow overwriting of fieldbook file.
                 QMessageBox.warning(self.iface.mainWindow(),
                                     tr('File warning'),
                                     tr('Error copying fieldbook template, target file exists?'),
