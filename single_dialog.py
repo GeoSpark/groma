@@ -15,6 +15,10 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QFont, QStandardItem
 from qgis.PyQt.QtWidgets import QDialog, QListWidgetItem, QMessageBox
 
+# noinspection PyUnresolvedReferences
+from qgis.core import QgsMessageLog, Qgis
+from qgis.utils import iface
+
 from .prettytable.prettytable import PrettyTable
 from .calculation import Calculation
 from .gama_interface import *
@@ -161,7 +165,7 @@ class SingleDialog(QDialog):
         # clear source and target list
         self.ui.SourceList.clear()
         self.ui.TargetList.clear()
-        # get tartget poins according to the stations
+        # get target points according to the stations
         targets = []
         if stn1 is not None and (self.ui.OrientRadio.isChecked() or
                                  self.ui.ResectionRadio.isChecked() or self.ui.FreeRadio.isChecked()):
@@ -269,33 +273,39 @@ class SingleDialog(QDialog):
                 to = get_target(targetp[0], targetp[1], targetp[2])
                 tp = ScPoint(targetp[0])
                 ref_list.append([tp, to])
-            z, rows = Calculation.orientation(s, ref_list)
-            if z is not None:
-                x = PrettyTable()
-                x.field_names = ['Point num', 'Code', 'Direction', 'Bearing', 'Orient ang', 'Distance', 'e(cc)', 'E(m)']
-                x.align['Point num'] = 'l'
-                x.align['Code'] = 'l'
-                x.align['Direction'] = 'r'
-                x.align['Bearing'] = 'r'
-                x.align['Orient ang'] = 'r'
-                x.align['Distance'] = 'r'
-                x.align['e(cc)'] = 'r'
-                x.align['E(m)'] = 'r'
-                x.float_format = '0.3'
 
-                for r in rows:
-                    x.add_row(r)
+            try:
+                z, rows = Calculation.orientation(s, ref_list)
+            except (ValueError, TypeError, AttributeError) as e:
+                iface.messageBar().pushMessage('SurveyingCalculation', str(e), level=Qgis.Critical)
+                QgsMessageLog.logMessage(str(e), 'SurveyingCalculation', level=Qgis.Critical)
+                return
 
-                set_orientationangle(stn1[0], stn1[1], stn1[2], z.get_angle('DEG'))
+            x = PrettyTable()
+            x.field_names = ['Point num', 'Code', 'Direction', 'Bearing', 'Orient ang', 'Distance', 'Ang err',
+                             'Dist err']
+            x.align['Point num'] = 'l'
+            x.align['Code'] = 'l'
+            x.align['Direction'] = 'r'
+            x.align['Bearing'] = 'r'
+            x.align['Orient ang'] = 'r'
+            x.align['Distance'] = 'r'
+            x.align['Ang err'] = 'r'
+            x.align['Dist err'] = 'r'
+            x.float_format = '0.3'
 
-                res = "\n" + tr('Orientation') + ' - %s\n' % s.p.id
-                res += x.get_string()
-                res += u"\n%-48s %s\n" % (tr('Average orientation angle'), z.get_angle('DMS'))
-                self.ui.ResultTextBrowser.append(res)
-                self.log.write()
-                self.log.write(res)
-            else:
-                QMessageBox.warning(self, tr("Warning"), tr("Orientation angle cannot be calculated!"))
+            for r in rows:
+                x.add_row(r)
+
+            set_orientationangle(stn1[0], stn1[1], stn1[2], z.get_angle(ANGLE_UNITS_STORE[config.angle_stored]))
+
+            res = "\n" + tr('Orientation') + ' - %s\n' % s.p.id
+            res += x.get_string()
+            res += u"\n%-48s %s\n" % \
+                (tr('Average orientation angle'), z.get_angle(ANGLE_UNITS_STORE[config.angle_displayed]))
+            self.ui.ResultTextBrowser.append(res)
+            self.log.write()
+            self.log.write(res)
 
         elif self.ui.RadialRadio.isChecked():
             # radial surveys (polar point)

@@ -21,6 +21,9 @@ PISEC = 180 * 60 * 60
 FOOT2M = 0.3048
 USFOOT2M = 1200/3937
 
+ANGLE_UNITS_STORE = ('DEG', 'RAD', 'GON')
+ANGLE_UNITS_DISP = ('DMS', 'DEG', 'RAD', 'GON')
+
 
 class Angle(object):
     """ Angle class, value stored in radian internally

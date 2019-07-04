@@ -19,3 +19,5 @@ TODO:
 * Add more logging
 * Output results to the QGIS log
 * Turn message boxes to toasts
+* Get metadata from input file
+* Allow overwriting of fieldbook .dbf files 

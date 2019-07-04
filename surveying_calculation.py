@@ -7,22 +7,15 @@
 .. moduleauthor: Zoltan Siki <siki@agt.bme.hu>
 
 """
-# Initialize Qt resources from file resources.py
-# from os import unlink
 import webbrowser
 
-# Use pdb for debugging
-# import pdb
-# from PyQt4.QtCore import pyqtRemoveInputHook
-# generic python modules
 from qgis.PyQt.QtCore import QSettings, QTranslator, qVersion, QCoreApplication, QFileInfo, QRegExp, Qt
 from qgis.PyQt.QtGui import QIcon
 from qgis.PyQt.QtWidgets import QAction, QMenu, QMessageBox, QFileDialog, QDialog
-from qgis.core import Qgis, QgsMessageLog, QgsMapLayer, QgsWkbTypes
+# noinspection PyUnresolvedReferences
+from qgis.core import Qgis, QgsMessageLog, QgsMapLayer, QgsWkbTypes, QgsVectorLayer
 
 # plugin specific python modules
-from . import config
-# from .calculation import *
 from .line_tool import LineMapTool
 from .network_dialog import NetworkDialog
 from .new_point_dialog import NewPointDialog
@@ -123,10 +116,9 @@ class SurveyingCalculation(object):
         self.actions.append(action)
         return action
 
+    # noinspection PyAttributeOutsideInit
     def initGui(self):
         """Create the menu entries and toolbar icons inside the QGIS GUI."""
-
-        icon_path = ':/plugins/SurveyingCalculation/icon.png'
 
         icon_dir = QDir.cleanPath(self.plugin_dir + QDir.separator() + 'icons')
         # build menu
@@ -209,7 +201,8 @@ class SurveyingCalculation(object):
         del self.toolbar
 
     def create_coordlist(self):
-        """ Create a new coordinate list from template and add to layer list. Layer/file name changed to start with 'coord\_' if neccessary.
+        """ Create a new coordinate list from template and add to layer list. Layer/file name changed to start with
+        'coord\\_' if neccessary.
         """
         ofname, __ = QFileDialog.getSaveFileName(self.iface.mainWindow(),
                                                  tr('QGIS co-ordinate list'),
@@ -230,7 +223,8 @@ class SurveyingCalculation(object):
             QgsProject.instance().addMapLayer(coord)
 
     def create_fb(self):
-        """ Create a new empty fieldbook from template and add to layer list. Layer/file name changed to start with 'fb\_' if neccessary.
+        """ Create a new empty fieldbook from template and add to layer list. Layer/file name changed to start with
+        'fb\\_' if neccessary.
         """
         ofname, __ = QFileDialog.getSaveFileName(self.iface.mainWindow(),
                                                  tr('New fieldbook'),
@@ -258,155 +252,167 @@ class SurveyingCalculation(object):
                                 tr("No coordinate list is opened, coordinates will be lost from the fieldbook"))
         fname, __ = QFileDialog.getOpenFileName(self.iface.mainWindow(),
                                                 tr('Electric fieldbook'), config.homedir,
-                                                filter=tr('Leica GSI (*.gsi);;'
+                                                filter=tr('Nikon RAW (*.raw);;'
+                                                          'Leica GSI (*.gsi);;'
                                                           'Leica IDX (*.idx);;'
                                                           'Geodimeter JOB/ARE (*.job *.are);;'
                                                           'Sokkia CRD (*.crd);;'
                                                           'SurvCE RW5 (*.rw5);;'
                                                           'STONEX DAT (*.dat);;'
                                                           'Text dump (*.dmp)'))
-        if fname:
-            # file selected
-            # make a copy of dbf template if not are is loaded
-            if QRegExp(r'\.are$', Qt.CaseInsensitive).indexIn(fname) == -1:
-                # ask for table name
-                ofname, __ = QFileDialog.getSaveFileName(self.iface.mainWindow(),
-                                                         tr('QGIS fieldbook'),
-                                                         QFileInfo(fname).absolutePath(),
-                                                         filter=tr('DBF file (*.dbf)'))
-                if not ofname:
-                    return
-                # remember last input dir
-                config.homedir = QFileInfo(fname).absolutePath()
-                config.store_config()
+        if not fname:
+            return
 
-                # start with 'fb_'?
-                if QRegExp('fb_').indexIn(QFileInfo(ofname).baseName()):
-                    ofname = QDir.cleanPath(QFileInfo(ofname).absolutePath() +
-                                            QDir().separator() + 'fb_' + QFileInfo(ofname).fileName())
-                # extension is .dbf?
-                if QRegExp(r'\.dbf$', Qt.CaseInsensitive).indexIn(ofname) == -1:
-                    ofname += '.dbf'
-                tempname = QDir.cleanPath(self.plugin_dir + QDir().separator() +
-                                          'template' + QDir().separator() + 'fb_template.dbf')
-                if not QFile(tempname).copy(ofname):
-                    QMessageBox.warning(self.iface.mainWindow(),
-                                        tr('File warning'),
-                                        tr('Error copying fieldbook template, target file exists?'),
-                                        QMessageBox.Ok)
-                    return
-                fb_dbf = QgsVectorLayer(ofname, QFileInfo(ofname).baseName(), "ogr")
-                if not fb_dbf or not fb_dbf.isValid():
-                    QMessageBox.warning(self.iface.mainWindow(),
-                                        tr('File warning'),
-                                        tr('Fieldbook loading error'),
-                                        QMessageBox.Ok)
-                    return
-                QgsProject.instance().addMapLayer(fb_dbf)
-            if QRegExp(r'\.gsi$', Qt.CaseInsensitive).indexIn(fname) > -1:
-                fb = LeicaGsi(fname)
-            elif QRegExp(r'\.job$', Qt.CaseInsensitive).indexIn(fname) > -1 or \
-                    QRegExp(r'\.are$', Qt.CaseInsensitive).indexIn(fname) > -1:
-                fb = JobAre(fname)
-            elif QRegExp(r'\.crd$', Qt.CaseInsensitive).indexIn(fname) > -1:
-                fb = Sdr(fname)
-            elif QRegExp(r'\.rw5$', Qt.CaseInsensitive).indexIn(fname) > -1:
-                fb = SurvCE(fname)
-            elif QRegExp(r'\.dat$', Qt.CaseInsensitive).indexIn(fname) > -1:
-                fb = Stonex(fname)
-            elif QRegExp(r'\.dmp$', Qt.CaseInsensitive).indexIn(fname) > -1:
-                fb = Dump(fname)
-            elif QRegExp(r'\.idx$', Qt.CaseInsensitive).indexIn(fname) > -1:
-                fb = Idex(fname)
-            else:
+        fb_dbf = None
+        ofname = None
+
+        # file selected
+        # make a copy of dbf template if not are is loaded
+        if QRegExp(r'\.are$', Qt.CaseInsensitive).indexIn(fname) == -1:
+            # ask for table name
+            ofname, __ = QFileDialog.getSaveFileName(self.iface.mainWindow(),
+                                                     tr('QGIS fieldbook'),
+                                                     QFileInfo(fname).absolutePath(),
+                                                     filter=tr('DBF file (*.dbf)'))
+            if not ofname:
+                return
+            # remember last input dir
+            config.homedir = QFileInfo(fname).absolutePath()
+            config.store_config()
+
+            # start with 'fb_'?
+            if QRegExp('fb_').indexIn(QFileInfo(ofname).baseName()):
+                ofname = QDir.cleanPath(QFileInfo(ofname).absolutePath() +
+                                        QDir().separator() + 'fb_' + QFileInfo(ofname).fileName())
+            # extension is .dbf?
+            if QRegExp(r'\.dbf$', Qt.CaseInsensitive).indexIn(ofname) == -1:
+                ofname += '.dbf'
+            tempname = QDir.cleanPath(self.plugin_dir + QDir().separator() +
+                                      'template' + QDir().separator() + 'fb_template.dbf')
+            if not QFile(tempname).copy(ofname):
                 QMessageBox.warning(self.iface.mainWindow(),
                                     tr('File warning'),
-                                    tr('Unknown fieldbook type'),
-                                    tr('OK'))
+                                    tr('Error copying fieldbook template, target file exists?'),
+                                    QMessageBox.Ok)
                 return
-            i = 10  # ordinal number for fieldbook records
-            # fb_dbf.startEditing()
-            fb.open()
-            n_fb = 0  # fieldbook records stored
-            n_co = 0  # points stored in coordinate list
-            while True:
-                # get next observation/station data from fieldbook
-                r = fb.parse_next()
-                if r is None:
-                    break  # end of file
-                if 'station' in r:
-                    # add row to fieldbook table
-                    record = QgsFeature()
-                    # add & initialize attributes
-                    record.setFields(fb_dbf.fields(), True)
-                    j = fb_dbf.dataProvider().fieldNameIndex('id')
+            fb_dbf = QgsVectorLayer(ofname, QFileInfo(ofname).baseName(), "ogr")
+            if not fb_dbf or not fb_dbf.isValid():
+                QMessageBox.warning(self.iface.mainWindow(),
+                                    tr('File warning'),
+                                    tr('Fieldbook loading error'),
+                                    QMessageBox.Ok)
+                return
+            QgsProject.instance().addMapLayer(fb_dbf)
+
+        if QRegExp(r'\.gsi$', Qt.CaseInsensitive).indexIn(fname) > -1:
+            fb = LeicaGsi(fname)
+        elif QRegExp(r'\.job$', Qt.CaseInsensitive).indexIn(fname) > -1 or \
+                QRegExp(r'\.are$', Qt.CaseInsensitive).indexIn(fname) > -1:
+            fb = JobAre(fname)
+        elif QRegExp(r'\.crd$', Qt.CaseInsensitive).indexIn(fname) > -1:
+            fb = Sdr(fname)
+        elif QRegExp(r'\.rw5$', Qt.CaseInsensitive).indexIn(fname) > -1:
+            fb = SurvCE(fname)
+        elif QRegExp(r'\.dat$', Qt.CaseInsensitive).indexIn(fname) > -1:
+            fb = Stonex(fname)
+        elif QRegExp(r'\.dmp$', Qt.CaseInsensitive).indexIn(fname) > -1:
+            fb = Dump(fname)
+        elif QRegExp(r'\.idx$', Qt.CaseInsensitive).indexIn(fname) > -1:
+            fb = Idex(fname)
+        elif QRegExp(r'\.raw$', Qt.CaseInsensitive).indexIn(fname) > -1:
+            fb = NikonRaw(fname)
+        else:
+            QMessageBox.warning(self.iface.mainWindow(),
+                                tr('File warning'),
+                                tr('Unknown fieldbook type'),
+                                QMessageBox.Ok)
+            return
+        i = 10  # ordinal number for fieldbook records
+        # fb_dbf.startEditing()
+        fb.open()
+        n_fb = 0  # fieldbook records stored
+        n_co = 0  # points stored in coordinate list
+        while True:
+            # get next observation/station data from fieldbook
+            r = fb.parse_next()
+            if r is None:
+                break  # end of file
+            if 'station' in r:
+                # add row to fieldbook table
+                record = QgsFeature()
+                # add & initialize attributes
+                record.setFields(fb_dbf.fields(), True)
+                j = fb_dbf.dataProvider().fieldNameIndex('id')
+                if j != -1:
+                    record.setAttribute(j, i)
+                for key in r:
+                    j = fb_dbf.dataProvider().fieldNameIndex(key)
                     if j != -1:
-                        record.setAttribute(j, i)
-                    for key in r:
-                        j = fb_dbf.dataProvider().fieldNameIndex(key)
-                        if j != -1:
-                            record.setAttribute(j, r[key])
-                    (xxx, yyy) = fb_dbf.dataProvider().addFeatures([record])
-                    if not xxx:
-                        QMessageBox.warning(self.iface.mainWindow(),
-                                            tr('File warning'),
-                                            tr('Fieldbook record creation error'),
-                                            tr('OK'))
-                        return
-                    n_fb += 1
-                if 'station_e' in r or 'station_z' in r:
-                    # store station coordinates too
-                    dimension = 0
-                    if 'station_z' in r:
-                        dimension += 1
-                    else:
-                        r['station_z'] = None
-                    if 'station_e' in r and 'station_n' in r:
-                        dimension += 2
-                    else:
-                        r['station_e'] = None
-                        r['station_n'] = None
-                    if not 'pc' in r:
-                        r['pc'] = None
-                    p = Point(r['point_id'], r['station_e'], r['station_n'], r['station_z'], r['pc'])
-                    qp = ScPoint(p)
-                    qp.store_coord(dimension)
-                    n_co += 1
-                if 'e' in r or 'z' in r:
-                    # store coordinates too
-                    dimension = 0
-                    if 'z' in r:
-                        dimension += 1
-                    else:
-                        r['z'] = None
-                    if 'e' in r and 'n' in r:
-                        dimension += 2
-                    else:
-                        r['e'] = None
-                        r['n'] = None
-                    if not 'pc' in r:
-                        r['pc'] = None
-                    p = Point(r['point_id'], r['e'], r['n'], r['z'], r['pc'])
-                    qp = ScPoint(p)
-                    qp.store_coord(dimension)
-                    n_co += 1
-                i += 10
-            # fb_dbf.commitChanges()
-            if QRegExp(r'\.are$', Qt.CaseInsensitive).indexIn(fname) == -1:
-                if n_fb == 0:  # no observations
-                    QgsProject.instance().removeMapLayer(fb_dbf.id())
-                    # remove empty file
-                    QFile(ofname).remove()
-                    if n_co == 0:  # no coordinates
-                        QMessageBox.warning(self.iface.mainWindow(), tr("Warning"),
-                                            tr("Neither coordinates nor observations found"))
-                    else:
-                        QMessageBox.warning(self.iface.mainWindow(), tr("Warning"),
-                                            tr("No observations found"))
-            self.log.write()
-            self.log.write_log(tr("Fieldbook loaded: ") + fname)
-            self.log.write("    %d observations, %d coordinates" % (n_fb, n_co))
-        return
+                        record.setAttribute(j, r[key])
+                (xxx, yyy) = fb_dbf.dataProvider().addFeatures([record])
+                if not xxx:
+                    QMessageBox.warning(self.iface.mainWindow(),
+                                        tr('File warning'),
+                                        tr('Fieldbook record creation error'),
+                                        tr('OK'))
+                    return
+                n_fb += 1
+            if 'station_e' in r or 'station_z' in r:
+                # store station coordinates too
+                dimension = 0
+                if 'station_z' in r:
+                    dimension += 1
+                else:
+                    r['station_z'] = None
+                if 'station_e' in r and 'station_n' in r:
+                    dimension += 2
+                else:
+                    r['station_e'] = None
+                    r['station_n'] = None
+                if 'pc' not in r:
+                    r['pc'] = None
+                if 'pt' not in r:
+                    r['pt'] = None
+                p = Point(r['point_id'], r['station_e'], r['station_n'], r['station_z'], r['pc'], r['pt'])
+                qp = ScPoint(p)
+                qp.store_coord(dimension)
+                n_co += 1
+            if 'e' in r or 'z' in r:
+                # store coordinates too
+                dimension = 0
+                if 'z' in r:
+                    dimension += 1
+                else:
+                    r['z'] = None
+                if 'e' in r and 'n' in r:
+                    dimension += 2
+                else:
+                    r['e'] = None
+                    r['n'] = None
+                if 'pc' not in r:
+                    r['pc'] = None
+                if 'pt' not in r:
+                    r['pt'] = None
+                p = Point(r['point_id'], r['e'], r['n'], r['z'], r['pc'], r['pt'])
+                qp = ScPoint(p)
+                qp.store_coord(dimension)
+                n_co += 1
+            i += 10
+        # fb_dbf.commitChanges()
+        if QRegExp(r'\.are$', Qt.CaseInsensitive).indexIn(fname) == -1:
+            if n_fb == 0:  # no observations
+                QgsProject.instance().removeMapLayer(fb_dbf.id())
+                # remove empty file
+                QFile(ofname).remove()
+                if n_co == 0:  # no coordinates
+                    QMessageBox.warning(self.iface.mainWindow(), tr("Warning"),
+                                        tr("Neither coordinates nor observations found"))
+                else:
+                    QMessageBox.warning(self.iface.mainWindow(), tr("Warning"),
+                                        tr("No observations found"))
+        self.log.write()
+        self.log.write_log(tr("Fieldbook loaded: ") + fname)
+        self.log.write("    %d observations, %d coordinates" % (n_fb, n_co))
 
     def addp(self):
         """ Add point(s) to coordinate list entering coordinates
@@ -418,7 +424,7 @@ class SurveyingCalculation(object):
         self.newp_dlg.show()
         self.newp_dlg.activateWindow()
         # Run the dialog event loop
-        result = self.newp_dlg.exec_()
+        self.newp_dlg.exec_()
 
     def calculations(self):
         """ Single point calculations (orientation, intersection,
@@ -428,7 +434,7 @@ class SurveyingCalculation(object):
         self.single_dlg.show()
         self.single_dlg.activateWindow()
         # Run the dialog event loop
-        result = self.single_dlg.exec_()
+        self.single_dlg.exec_()
 
     def traverses(self):
         """ Various traverse claculations
@@ -437,7 +443,7 @@ class SurveyingCalculation(object):
         self.traverse_dlg.show()
         self.traverse_dlg.activateWindow()
         # Run the dialog event loop
-        result = self.traverse_dlg.exec_()
+        self.traverse_dlg.exec_()
 
     def networks(self):
         """ Various network adjustments (1D/2D/3D)
@@ -446,7 +452,7 @@ class SurveyingCalculation(object):
         self.network_dlg.show()
         self.network_dlg.activateWindow()
         # Run the dialog event loop
-        result = self.network_dlg.exec_()
+        self.network_dlg.exec_()
 
     def transformation(self):
         """ Various coordinate transformations (orthogonal, affine, polynomial)
@@ -455,7 +461,7 @@ class SurveyingCalculation(object):
         self.transformation_dlg.show()
         self.transformation_dlg.activateWindow()
         # Run the dialog event loop
-        result = self.transformation_dlg.exec_()
+        self.transformation_dlg.exec_()
 
     def polygon_division(self):
         """ accept a line from the user to divide the selected polygon on

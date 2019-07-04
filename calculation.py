@@ -8,6 +8,7 @@
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 
 """
+from . import config
 from .base_classes import *
 from .resultlog import *
 
@@ -49,7 +50,7 @@ class Calculation(object):
                 ref.append(Angle(b))
 
             if sd == 0:
-                return None, None
+                raise ValueError('Total distance is 0')
 
             sz = sz / sd
             cz = cz / sd
@@ -57,21 +58,24 @@ class Calculation(object):
             za = math.atan2(sz, cz)
             while za < 0:
                 za = za + math.pi * 2
-        except (ValueError, TypeError, AttributeError):
-            return None, None
+        except (ValueError, TypeError, AttributeError) as e:
+            raise e
 
         ret = []
 
         for ref in ref_list:
-            e = ref[3].get_angle("SEC") - Angle(za).get_angle("SEC")
+            e = ref[3].get_angle('SEC') - Angle(za).get_angle('SEC')
             if e > PISEC:
                 e = e - 2 * PISEC
             if e < -PISEC:
                 e = e + 2 * PISEC
             E = e / RO * ref[2]
+
+            e = Angle(e, 'SEC').get_angle(ANGLE_UNITS_STORE[config.angle_displayed])
             ret.append((ref[1].point_id, (ref[1].pc if ref[1].pc is not None else "-"),
-                        ref[4].get_angle('DMS'), ref[5].get_angle('DMS'),
-                        ref[3].get_angle('DMS'), ref[2], int(e), E))
+                        ref[4].get_angle(ANGLE_UNITS_STORE[config.angle_displayed]),
+                        ref[5].get_angle(ANGLE_UNITS_STORE[config.angle_displayed]),
+                        ref[3].get_angle(ANGLE_UNITS_STORE[config.angle_displayed]), ref[2], e, E))
         return Angle(za), ret
 
     @staticmethod
@@ -96,12 +100,12 @@ class Calculation(object):
                 z = None
 
             p = Point(obs.point_id, e, n, z, obs.pc)
-            ret = (
-            p.id, (p.pc if p.pc is not None else "-"), p.e, p.n, p.z, Angle(b).get_angle('DMS'), obs.horiz_dist())
+            ret = (p.id, (p.pc if p.pc is not None else "-"), p.e, p.n, p.z,
+                   Angle(b).get_angle(ANGLE_UNITS_STORE[config.angle_displayed]), obs.horiz_dist())
 
             return p, ret
-        except (ValueError, TypeError, AttributeError):
-            return None, None
+        except (ValueError, TypeError, AttributeError) as e:
+            raise e
 
     @staticmethod
     def intersection(s1, obs1, s2, obs2):
@@ -131,8 +135,9 @@ class Calculation(object):
         pp.id = obs1.point_id
         pp.pc = pc
 
-        return pp, (pp.id, (pp.pc if pp.pc is not None else "-"), pp.e, pp.n, Angle(b1).get_angle('DMS'),
-                    Angle(b2).get_angle('DMS'))
+        return pp, (pp.id, (pp.pc if pp.pc is not None else "-"), pp.e, pp.n,
+                    Angle(b1).get_angle(ANGLE_UNITS_STORE[config.angle_displayed]),
+                    Angle(b2).get_angle(ANGLE_UNITS_STORE[config.angle_displayed]))
 
     @staticmethod
     def resection(st, p1, p2, p3, obs1, obs2, obs3):
@@ -159,8 +164,8 @@ class Calculation(object):
             # Calculate the intersection of two circles.
             try:
                 points = intersecCC(circ1, circ2)
-            except AttributeError:
-                return None, None
+            except AttributeError as e:
+                raise e
 
             # IntersectCC functions can return with zero or two intersection points.
             # If the number of intersection point is zero the resection method return None object.
@@ -174,17 +179,19 @@ class Calculation(object):
                 rows = list()
 
                 rows.append((obs1.point_id, (obs1.pc if obs1.pc is not None else "-"), p1.e, p1.n,
-                             obs1.hz.get_angle('DMS'), alpha.get_angle('DMS')))
+                             obs1.hz.get_angle(ANGLE_UNITS_STORE[config.angle_displayed]),
+                             alpha.get_angle(ANGLE_UNITS_STORE[config.angle_displayed])))
                 rows.append((obs2.point_id, (obs2.pc if obs2.pc is not None else "-"), p2.e, p2.n,
-                             obs2.hz.get_angle('DMS'), beta.get_angle('DMS')))
+                             obs2.hz.get_angle(ANGLE_UNITS_STORE[config.angle_displayed]),
+                             beta.get_angle(ANGLE_UNITS_STORE[config.angle_displayed])))
                 rows.append((obs3.point_id, (obs3.pc if obs3.pc is not None else "-"), p3.e, p3.n,
-                             obs3.hz.get_angle('DMS'), ''))
+                             obs3.hz.get_angle(ANGLE_UNITS_STORE[config.angle_displayed]), ''))
                 rows.append((p.id, (p.pc if p.pc is not None else "-"), p.e, p.n, '', ''))
                 return p, rows
             else:
-                return None, None
-        except (ValueError, TypeError):
-            return None, None
+                raise IndexError('There must be exactly two points')
+        except (ValueError, TypeError) as e:
+            raise e
 
     @staticmethod
     def traverse(trav_obs, forceFree=False):
@@ -195,7 +202,11 @@ class Calculation(object):
             3. closed traverse at both ends and both endpoints has known bearings
             4. inserted traverse: closed at both ends but no bearings
 
-            :param trav_obs: a list of sublists consists of a Point and two PolarObservations, If the station member is not None the point is a station. Start point must have coordinates in case of type 1-4 and end points must have coordinates in case of type 2-4.  Two observations are needed at the angle points. At the start point the second observation is required in case of type 1-3. At the end point the first observation is required in case of type 3.
+            :param trav_obs: a list of sublists consists of a Point and two PolarObservations, If the station member is
+             not None the point is a station. Start point must have coordinates in case of type 1-4 and end points must
+             have coordinates in case of type 2-4.  Two observations are needed at the angle points. At the start point
+             the second observation is required in case of type 1-3. At the end point the first observation is required
+             in case of type 3.
             :param forceFree: force free traverse calculation (Boole)
             :returns: a list of points which's coordinates has been computed.
         """
@@ -322,7 +333,7 @@ class Calculation(object):
 
         # angle corrections
         w = 0.0  # in seconds
-        vbeta = [None] * n  # in seconds
+        vbeta = [0.0] * n  # in seconds
         for i in range(0, n):
             vbeta[i] = dbeta / n
             w = w + vbeta[i]
@@ -381,10 +392,10 @@ class Calculation(object):
             ddist = math.hypot(dde, ddn)  # linear error
 
         #    calculate final coords
-        ve = [0] * n
-        vn = [0] * n
-        ee = [0] * n
-        nn = [0] * n
+        ve = [0.0] * n
+        vn = [0.0] * n
+        ee = [0.0] * n
+        nn = [0.0] * n
         we = dde / sumt
         wn = ddn / sumt
         ee[0] = startp.p.e
@@ -405,12 +416,12 @@ class Calculation(object):
                 if beta[i] is None:
                     ResultLog.resultlog_message += u"%-10s %10s %8.3f %8.3f %8.3f %10.3f %10.3f\n" % \
                                                    ((trav_obs[i][0].p.id if trav_obs[i][0].p is not None else "-"), "",
-                                                    t[i].d, \
+                                                    t[i].d,
                                                     de[i], dn[i], de[i] + ve[i], dn[i] + vn[i])
                 else:
                     ResultLog.resultlog_message += u"%-10s %10.4f %8.3f %8.3f %8.3f %10.3f %10.3f\n" % \
                                                    ((trav_obs[i][0].p.id if trav_obs[i][0].p is not None else "-"),
-                                                    beta[i].get_angle('GON'), t[i].d, \
+                                                    beta[i].get_angle('GON'), t[i].d,
                                                     de[i], dn[i], de[i] + ve[i], dn[i] + vn[i])
             else:
                 if beta[i] is None:
@@ -506,7 +517,7 @@ class Calculation(object):
                         else:
                             a[j][k] = -t * q
                     b[j] = b[j] - t * b[i]
-        return (b, a)
+        return b, a
 
     @staticmethod
     def orthogonal_transformation(plist):
@@ -676,7 +687,8 @@ class Calculation(object):
 
             :param plist: a list of common points used in the transformation plist[i]==[srci,desti]
             :param degree: degree of transformation 3/4/5
-            :returns: the list of parameters X0 Y0 a1 b1 a2 b2 a3 b3 ...  and the weight point coordinates in source and target system
+            :returns: the list of parameters X0 Y0 a1 b1 a2 b2 a3 b3 ... and the weight point coordinates in source
+             and target system
         """
         # set up A matrix (a1 for e, a2 for n)
         np = len(plist)  # number of points
@@ -700,32 +712,32 @@ class Calculation(object):
         avgE = S1 / np
         avgN = S2 / np
         i = 0
-        a1 = [[0 for x in range(m)] for x in range(np)]
-        a2 = [[0 for x in range(m)] for x in range(np)]
-        l1 = [0 for x in range(np)]
-        l2 = [0 for x in range(np)]
+        a1 = [[0.0] * m] * np
+        a2 = [[0.0] * m] * np
+        l1 = [0.0] * np
+        l2 = [0.0] * np
         for p in plist:
             e = p[0].e - avge
             n = p[0].n - avgn
             E = p[1].e - avgE
             N = p[1].n - avgN
-            l = 0
+            ll = 0
             for j in range(0, degree + 1):
                 for k in range(0, degree + 1):
                     if j + k <= degree:
-                        a1[i][l] = math.pow(e, k) * math.pow(n, j)
-                        a2[i][l] = math.pow(e, k) * math.pow(n, j)
-                        l += 1
+                        a1[i][ll] = math.pow(e, k) * math.pow(n, j)
+                        a2[i][ll] = math.pow(e, k) * math.pow(n, j)
+                        ll += 1
             l1[i] = E
             l2[i] = N
             i += 1
 
         # set matrix of normal equation
         # N1 = a1T*a1, N2 = a2T * a2, n1 = a1T * l1, n2 = a2T * l2
-        N1 = [[0 for x in range(m)] for x in range(m)]
-        N2 = [[0 for x in range(m)] for x in range(m)]
-        n1 = [0] * m
-        n2 = [0] * m
+        N1 = [[0.0] * m] * m
+        N2 = [[0.0] * m] * m
+        n1 = [0.0] * m
+        n2 = [0.0] * m
         for i in range(0, m):
             for j in range(i, m):
                 s1 = 0.0

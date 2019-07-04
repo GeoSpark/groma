@@ -9,7 +9,11 @@
 """
 import math
 import re
-from .base_classes import Angle, FOOT2M
+
+# noinspection PyUnresolvedReferences
+from qgis.core import QgsMessageLog, Qgis
+from . import config
+from .base_classes import Angle, FOOT2M, ANGLE_UNITS_STORE
 
 
 class TotalStation(object):
@@ -79,7 +83,7 @@ class TotalStation(object):
     def parse_next(self):
         """ Parse one line/logical unit of input, implemented in derived classes
         """
-        pass
+        raise NotImplementedError
 
 
 class LeicaGsi(TotalStation):
@@ -111,13 +115,13 @@ class LeicaGsi(TotalStation):
             res = val / 1000.0 * FOOT2M
         elif unit == 2:
             # gon
-            res = Angle(val / 100000.0, 'GON').get_angle('GON')
+            res = Angle(val / 100000.0, 'GON').get_angle(ANGLE_UNITS_STORE[config.angle_stored])
         elif unit == 3:
             # DEG
-            res = Angle(val / 10000.0, 'DEG').get_angle('GON')
+            res = Angle(val / 10000.0, 'DEG').get_angle(ANGLE_UNITS_STORE[config.angle_stored])
         elif unit == 4:
             # DMS
-            res = Angle(val / 100000.0, 'PDEG').get_angle('GON')
+            res = Angle(val / 100000.0, 'PDEG').get_angle(ANGLE_UNITS_STORE[config.angle_stored])
         elif unit == 5:
             # mil
             res = val / 6400.0 * math.pi * 2
@@ -283,11 +287,11 @@ class JobAre(TotalStation):
                 self.res['th'] = self.dist_conv(float(buf[1].strip()))
             elif item_code == '7' or item_code == '21':
                 # horizontal angle
-                self.res['hz'] = Angle(float(buf[1]), self.angle_unit).get_angle('DEG')
+                self.res['hz'] = Angle(float(buf[1]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
                 self.res['station'] = None
             elif item_code == '8':
                 # zenit angle
-                self.res['v'] = Angle(float(buf[1]), self.angle_unit).get_angle('DEG')
+                self.res['v'] = Angle(float(buf[1]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
                 self.res['station'] = None
             elif item_code == '9':
                 # slope distance
@@ -299,7 +303,7 @@ class JobAre(TotalStation):
             elif item_code == '11':
                 # horizontal distance stored as slope
                 self.res['sd'] = self.dist_conv(float(buf[1].strip()))
-                self.res['v'] = Angle(90, 'DEG').get_angle('GON')
+                self.res['v'] = Angle(90, 'DEG').get_angle(ANGLE_UNITS_STORE[config.angle_stored])
             elif item_code == '23':
                 # units
                 self.angle_unit = {'1': 'GON', '2': 'DMS', '3': 'DEG', '4': 'MIL'}[buf[3]]
@@ -350,7 +354,7 @@ class Sdr(TotalStation):
             :param value: angle to convert
             :returns: angle in Gon
         """
-        return Angle(value, self.angle_unit).get_angle('GON')
+        return Angle(value, self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
 
     def pn(self, pbuf):
         """ Get point id from input buffer removing leading zeros
@@ -561,16 +565,16 @@ class SurvCE(TotalStation):
                         self.res['point_id'] = field[2:].strip()
                     elif fcode == 'AL':
                         self.res['hz'] = 400 - Angle(float(field[2:].strip()),
-                                                     self.angle_unit).get_angle('GON')
+                                                     self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
                     elif fcode == 'AR':
                         self.res['hz'] = Angle(float(field[2:].strip()),
-                                               self.angle_unit).get_angle('GON')
+                                               self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
                     elif fcode == 'ZE':
                         self.res['v'] = Angle(float(field[2:].strip()),
-                                              self.angle_unit).get_angle('GON')
+                                              self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
                     elif fcode == 'VA':
                         self.res['hz'] = 100 - Angle(float(field[2:].strip()),
-                                                     self.angle_unit).get_angle('GON')
+                                                     self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
                     elif fcode == 'SD':
                         self.res['sd'] = float(field[2:].strip()) * self.dist_mul
                     elif fcode == '--':
@@ -606,7 +610,7 @@ class SurvCE(TotalStation):
                         self.res['point_id'] = field[2:].strip()
                     elif fcode == 'BS':
                         self.res['hz'] = Angle(float(field[2:].strip()),
-                                               self.angle_unit).get_angle('GON')
+                                               self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
                     # BC ignored
                 return self.res
             elif line_code == 'LS':
@@ -670,13 +674,16 @@ class Stonex(TotalStation):
                 self.res['n'] = float(buf[2].strip())
                 self.res['e'] = float(buf[3].strip())
                 self.res['z'] = float(buf[4].strip())
-                self.res['hz'] = Angle(float(buf[5].strip()) / 10000.0, self.angle_unit).get_angle('GON')
+                self.res['hz'] = Angle(float(buf[5].strip()) / 10000.0, self.angle_unit).get_angle(
+                    ANGLE_UNITS_STORE[config.angle_stored])
                 self.res['th'] = float(buf[6].strip())
                 self.res['station'] = 'station'
             elif buf[0] == 'E':  # observation
                 self.res['point_id'] = point_id
-                self.res['hz'] = Angle(float(buf[2].strip()) / 10000.0, self.angle_unit).get_angle('GON')
-                self.res['v'] = Angle(float(buf[3].strip()) / 10000.0, self.angle_unit).get_angle('GON')
+                self.res['hz'] = Angle(float(buf[2].strip()) / 10000.0, self.angle_unit).get_angle(
+                    ANGLE_UNITS_STORE[config.angle_stored])
+                self.res['v'] = Angle(float(buf[3].strip()) / 10000.0, self.angle_unit).get_angle(
+                    ANGLE_UNITS_STORE[config.angle_stored])
                 self.res['th'] = float(buf[4].strip())
                 self.res['sd'] = float(buf[6].strip())
                 self.res['station'] = None
@@ -695,7 +702,8 @@ class Stonex(TotalStation):
                 self.res['n'] = float(buf[2].strip())
                 self.res['e'] = float(buf[3].strip())
                 self.res['z'] = float(buf[4].strip())
-                self.res['hz'] = Angle(float(buf[5].strip()) / 10000.0, self.angle_unit).get_angle('GON')
+                self.res['hz'] = Angle(float(buf[5].strip()) / 10000.0, self.angle_unit).get_angle(
+                    ANGLE_UNITS_STORE[config.angle_stored])
                 self.res['th'] = float(buf[6].strip())
                 self.res['station'] = None
             if len(last_res):
@@ -727,9 +735,9 @@ class Dump(TotalStation):
         val = val.strip()
         if len(val):
             try:
-                ret = Angle(float(val)).get_angle('GON')
+                ret = Angle(float(val)).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
             except (ValueError, TypeError):
-                ret = Angle(val, 'DMS').get_angle('GON')
+                ret = Angle(val, 'DMS').get_angle(ANGLE_UNITS_STORE[config.angle_stored])
         return ret
 
     @staticmethod
@@ -921,10 +929,136 @@ class Idex(TotalStation):
             elif self.theodolite and self.slope:
                 res['point_id'] = buf[1]
                 res['station'] = ''
-                res['hz'] = Angle(float(buf[3]), self.angular).get_angle('GON') \
+                res['hz'] = Angle(float(buf[3]), self.angular).get_angle(ANGLE_UNITS_STORE[config.angle_stored]) \
                     if len(buf[3]) else None
-                res['v'] = Angle(float(buf[4]), self.angular).get_angle('GON') \
+                res['v'] = Angle(float(buf[4]), self.angular).get_angle(ANGLE_UNITS_STORE[config.angle_stored]) \
                     if len(buf[4]) else None
                 res['sd'] = float(buf[5]) if len(buf[5]) else None
                 res['th'] = float(buf[6]) if len(buf[6]) else None
                 return res
+
+
+class NikonRaw(TotalStation):
+    """ Class to read Nikon RAW v2 data. Based almost entirely on TotalOpenStation:
+    https://github.com/steko/totalopenstation/blob/master/totalopenstation/formats/nikon_raw_v200.py
+    """
+    UNITS = {
+        "angle": {"DDDMMSS": "PDEG", "MIL": "MIL", "Gons": "GON", "Degrees": "DEG"},
+        "distance": {"Feet": "feet", "Metres": "metre", "Feet US": "ussfeet"}
+    }
+
+    COORDINATE_ORDER = ('NEZ', 'ENZ')
+
+    def __init__(self, fname):
+        """ Initialize a new instance
+
+            :param fname: file name to open (str)
+        """
+        super(NikonRaw, self).__init__(fname, ',')
+        self.coordorder = 'ENZ'
+        self.angle_unit = 'deg'
+        self.dist_unit = 'metre'
+
+    @staticmethod
+    def check_coordorder(coordorder):
+        if any((coordorder == v for v in NikonRaw.COORDINATE_ORDER)):
+            return coordorder
+        else:
+            raise ValueError('Invalid coordinate order')
+
+    def parse_next(self):
+        fs = self.get_line()
+        if fs is None:
+            return None
+
+        res = {}
+
+        # Get angle and distance units
+        if fs[0] == 'CO':
+            if fs[1].startswith('Coord Order:'):
+                self.coordorder = NikonRaw.check_coordorder(fs[1].split(':')[-1].strip())
+            if fs[1].startswith('Angle Units:'):
+                self.angle_unit = NikonRaw.UNITS["angle"][fs[1].split(':')[1].strip()]
+            if fs[1].startswith('Dist Units:'):
+                self.dist_unit = NikonRaw.UNITS["distance"][fs[1].split(':')[1].strip()]
+
+        # Look for point coordinates
+        elif fs[0] in ('UP', 'MP', 'CC', 'RE', 'MC'):
+            res['pt'] = fs[0]
+            res['point_id'] = fs[1]
+            easting = fs[3]
+            northing = fs[4]
+            if self.coordorder == "NEZ":
+                easting, northing = northing, easting
+
+            res['e'] = float(easting)
+            res['n'] = float(northing)
+            res['z'] = float(fs[5])
+            res['pc'] = fs[6]
+
+        # Look for station coordinates
+        elif fs[0] == 'ST':
+            res['pt'] = fs[0]
+            res['point_id'] = fs[1]
+            res['station'] = 'station'
+
+            try:
+                res['ih'] = float(fs[5])
+            except ValueError:
+                res['ih'] = 0.0
+
+            # Look for back sight values in station values
+            # Treat only one backsight or the last one
+            # if fs[3] != '':
+            #     b_zero_st = (float(fs[6]) - float(fs[7])) % NikonRaw.UNITS_CIRCLE[self.angle_unit]
+            # else:
+            #     b_zero_st = 0.0
+            # if fs[3] != '':
+            #     point_name = fs[3]
+            #     azimuth = fs[6]
+            #     circle = fs[7]
+
+            # TODO: Not sure of the difference between fs[6] (backsight azimuth) and fs[7] (backsight horizontal angle)
+            try:
+                res['hz'] = Angle(float(fs[7]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+            except ValueError:
+                pass
+
+        # Look for Sideshot, Face 1 and Face 2
+        # TODO: For now ignore Face records. I'm not sure if they are of use to us here.
+        elif fs[0] in ('SS', ):  # , 'F1', 'F2'):
+            res['pt'] = fs[0]
+            res['station'] = None
+            for i in (2, 3, 4, 5):
+                if fs[i] == '':
+                    fs[i] = 0
+            res['point_id'] = fs[1]
+            res['th'] = float(fs[2])
+            res['sd'] = float(fs[3])
+            res['hz'] = Angle(float(fs[4]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+            res['v'] = Angle(float(fs[5]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+            if len(fs) >= 8:
+                res['pc'] = fs[7]
+
+        # Look for Stakeout
+        elif fs[0] == 'SO':
+            res['station'] = None
+            res['pt'] = fs[0]
+            res['point_id'] = fs[1]
+            res['th'] = float(fs[3])
+            res['sd'] = float(fs[4])
+            res['hz'] = Angle(float(fs[5]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+            res['v'] = Angle(float(fs[6]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+
+        # Look for Control point
+        elif fs[0] == 'CP':
+            res['station'] = None
+            res['pt'] = fs[0]
+            res['point_id'] = fs[1]
+            res['th'] = float(fs[3])
+            res['sd'] = float(fs[4])
+            res['hz'] = Angle(float(fs[5]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+            res['v'] = Angle(float(fs[6]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+            res['pc'] = fs[8]
+
+        return res

@@ -43,9 +43,6 @@ distance_displayed = 0
 angle_stored = 0
 angle_displayed = 0
 
-ANGLE_UNITS_STORE = ('DEG', 'RAD', 'GON')
-ANGLE_UNITS_DISP = ('DMS', 'DEG', 'RAD', 'GON')
-
 
 def store_config():
     proj = QgsProject.instance()

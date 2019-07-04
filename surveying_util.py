@@ -7,8 +7,8 @@
 
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
-from __future__ import absolute_import
-from qgis.core import QgsProject
+# noinspection PyUnresolvedReferences
+from qgis.core import QgsProject, QgsFeature, QgsGeometry, QgsPointXY, QgsMapLayer, QgsMessageLog
 from .base_classes import *
 
 
@@ -151,9 +151,9 @@ def get_coord(p, clist=None):
                 if type(feat['z']) is float:
                     pp.z = feat['z']
                 if type(feat['pc']) is str:
-                    p.pc = feat['pc']
+                    pp.pc = feat['pc']
                 if type(feat['pt']) is str:
-                    p.pt = feat['pt']
+                    pp.pt = feat['pt']
                 return pp
     return None
 
@@ -213,7 +213,7 @@ def get_measured(dimension=2):
                 coord = False
             else:
                 coord = True
-            if not pid in found:
+            if pid not in found:
                 plist.append([pid, coord])
                 found.append(pid)
 
@@ -243,7 +243,7 @@ def get_unknown(dimension=2):
                     (dimension == 1 and p.z is None) or \
                     (dimension == 2 and (p.e is None or p.n is None)) or \
                     (dimension == 3 and (p.e is None or p.n is None or p.z is None)):
-                if not pid in plist:
+                if pid not in plist:
                     plist.append(pid)
     if len(plist):
         return sorted(plist)
@@ -258,7 +258,9 @@ def get_stations(known=False, oriented=False):
         :returns: list of station [[point_id fieldbook_name id] ...]
     """
     slist = []
+    known_list = None
     fb_list = get_fblist()
+
     if fb_list is None:
         return None
     if known:
@@ -270,14 +272,14 @@ def get_stations(known=False, oriented=False):
         for feat in lay.getFeatures():
             if feat['station'] == 'station':
                 pid = feat['point_id']
-                if known and known_list is not None and not pid in known_list:
+                if known and known_list is not None and pid not in known_list:
                     # skip unknown points
                     continue
                 if oriented and type(feat['hz']) is not float:
                     continue
                 fid = feat['id']
                 act = [pid, fb, fid]
-                if not act in slist:
+                if act not in slist:
                     slist.append(act)
     if len(slist):
         return sorted(slist)
@@ -291,9 +293,11 @@ def get_targets(point_id, fieldbook, fid, known=False, polar=False):
         :param fieldbook: name of fieldbook (str)
         :param fid: id in fieldbook (int)
         :param known: If True only known points get into list.
+        :param polar: Polar or cartesian coordinates
         :returns: list of target points [[point_id fieldbook_name id] ...]
     """
     obs = []
+    known_list = None
     found = False
     lay = get_layer_by_name(fieldbook)
     if lay is None:
@@ -307,18 +311,20 @@ def get_targets(point_id, fieldbook, fid, known=False, polar=False):
             continue
         elif feat['station'] == 'station' and found:
             # next station reached
-            found = False
             break
         elif found:
             pid = feat['point_id']
             fid = feat['id']
-            if known and known_list is not None and not pid in known_list:
+            if known and known_list is not None and pid not in known_list:
                 # skip unknown points
                 continue
+
             if polar and (type(feat['hz']) is not float or type(feat['sd']) is not float):
                 continue
+
             o = [pid, fieldbook, fid]
             obs.append(o)
+
     if len(obs):
         return sorted(obs)
     return None
@@ -356,9 +362,11 @@ def get_fieldbookrow(point_id, fieldbook, fid):
         :param fid: id in fieldbook (int)
         :returns: observation to the point or a station (PolarObservation)
     """
+    o = None
     lay = get_layer_by_name(fieldbook)
     if lay is None:
         return None
+
     sorted_features = sorted(lay.getFeatures(), key=lambda x: x["id"])
     for feat in sorted_features:
         if feat['id'] == fid and feat['point_id'] == point_id:
@@ -371,6 +379,7 @@ def get_fieldbookrow(point_id, fieldbook, fid):
                     dist = Distance(feat['sd'], "SD")
             else:
                 dist = None
+
             o = PolarObservation(feat['point_id'],
                                  ('station' if feat['station'] == 'station' else None),
                                  (Angle(feat['hz'], "GON") if type(feat['hz']) is float else None),
@@ -422,6 +431,7 @@ class ScPoint(Point):
             super(ScPoint, self).__init__("@")
 
         self.coo = coo
+        self.point_id = None
 
     def get_coord(self):
         """ Get the coordinates of the point from coord table and update coordinate fields.
@@ -448,6 +458,8 @@ class ScPoint(Point):
             :param dimension: 2/3D coordinates to store (int)
             :param clist: name of layer to add (str)
         """
+        cl = None
+
         if clist is None:
             if self.coo is None:
                 # new point to add to the first table
