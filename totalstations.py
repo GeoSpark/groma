@@ -958,6 +958,7 @@ class NikonRaw(TotalStation):
         self.coordorder = 'ENZ'
         self.angle_unit = 'deg'
         self.dist_unit = 'metre'
+        self.last_station = {}
 
     @staticmethod
     def check_coordorder(coordorder):
@@ -998,14 +999,14 @@ class NikonRaw(TotalStation):
 
         # Look for station coordinates
         elif fs[0] == 'ST':
-            res['pt'] = fs[0]
-            res['point_id'] = fs[1]
-            res['station'] = 'station'
+            self.last_station['pt'] = fs[0]
+            self.last_station['point_id'] = fs[1]
+            self.last_station['station'] = 'station'
 
             try:
-                res['ih'] = float(fs[5])
+                self.last_station['ih'] = float(fs[5])
             except ValueError:
-                res['ih'] = 0.0
+                self.last_station['ih'] = 0.0
 
             # Look for back sight values in station values
             # Treat only one backsight or the last one
@@ -1019,14 +1020,27 @@ class NikonRaw(TotalStation):
             #     circle = fs[7]
 
             # TODO: Not sure of the difference between fs[6] (backsight azimuth) and fs[7] (backsight horizontal angle)
-            try:
-                res['hz'] = Angle(float(fs[7]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
-            except ValueError:
-                pass
+            # try:
+            #     self.last_station['hz'] = Angle(float(fs[7]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+            # except ValueError:
+            #     self.last_station['hz'] = 0.0
 
-        # Look for Sideshot, Face 1 and Face 2
-        # TODO: For now ignore Face records. I'm not sure if they are of use to us here.
-        elif fs[0] in ('SS', ):  # , 'F1', 'F2'):
+        # Look for Face 1 and Face 2
+        elif fs[0] in ('F1', 'F2'):
+            for i in (2, 3, 4, 5):
+                if fs[i] == '':
+                    fs[i] = 0
+            # self.last_station['th'] = float(fs[2])
+            # For stations we store the instrument height in the target height field.
+            self.last_station['th'] = self.last_station['ih']
+            self.last_station['sd'] = float(fs[3])
+            self.last_station['hz'] = Angle(float(fs[4]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+            self.last_station['v'] = Angle(float(fs[5]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+
+            res = self.last_station
+
+        # Look for Sideshot
+        elif fs[0] == 'SS':
             res['pt'] = fs[0]
             res['station'] = None
             for i in (2, 3, 4, 5):

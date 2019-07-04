@@ -95,9 +95,6 @@ class Calculation(object):
             # Calculate the coordinates of the new point.
             e = st.p.e + obs.horiz_dist() * math.sin(b)
             n = st.p.n + obs.horiz_dist() * math.cos(b)
-            QgsMessageLog.logMessage(f'x{st.p.z}x x{st.o.th}x x{obs.v}x', 'SurveyingCalculation', level=Qgis.Info)
-            QgsMessageLog.logMessage(str(st), 'SurveyingCalculation', level=Qgis.Info)
-            QgsMessageLog.logMessage(str(obs), 'SurveyingCalculation', level=Qgis.Info)
             if st.p.z is not None and st.o.th is not None and obs.v is not None:
                 z = st.p.z + st.o.th + obs.d.d * math.cos(obs.v.get_angle())
                 if obs.th is not None:
