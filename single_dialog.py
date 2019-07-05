@@ -281,8 +281,17 @@ class SingleDialog(QDialog):
                 QgsMessageLog.logMessage(str(e), 'SurveyingCalculation', level=Qgis.Critical)
                 return
 
+            ang_err_label = 'Ang err'
+
+            if ANGLE_UNITS_DISP[config.angle_displayed] in ('DEG', 'DMS'):
+                ang_err_label += ' (")'
+            elif ANGLE_UNITS_DISP[config.angle_displayed] == 'GON':
+                ang_err_label += ' (cc)'
+            elif ANGLE_UNITS_DISP[config.angle_displayed] == 'RAD':
+                ang_err_label += ' (r)'
+
             x = PrettyTable()
-            x.field_names = ['Point num', 'Code', 'Direction', 'Bearing', 'Orient ang', 'Distance', 'Ang err',
+            x.field_names = ['Point num', 'Code', 'Direction', 'Bearing', 'Orient ang', 'Distance', ang_err_label,
                              'Dist err']
             x.align['Point num'] = 'l'
             x.align['Code'] = 'l'
@@ -290,7 +299,7 @@ class SingleDialog(QDialog):
             x.align['Bearing'] = 'r'
             x.align['Orient ang'] = 'r'
             x.align['Distance'] = 'r'
-            x.align['Ang err'] = 'r'
+            x.align[ang_err_label] = 'r'
             x.align['Dist err'] = 'r'
             x.float_format = '0.3'
 
@@ -302,7 +311,7 @@ class SingleDialog(QDialog):
             res = "\n" + tr('Orientation') + ' - %s\n' % s.p.id
             res += x.get_string()
             res += u"\n%-48s %s\n" % \
-                (tr('Average orientation angle'), z.get_angle(ANGLE_UNITS_STORE[config.angle_displayed]))
+                (tr('Average orientation angle'), z.get_angle(ANGLE_UNITS_DISP[config.angle_displayed]))
             self.ui.ResultTextBrowser.append(res)
             self.log.write()
             self.log.write(res)

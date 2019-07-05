@@ -414,6 +414,7 @@ class SurveyingCalculation(object):
         self.log.write()
         self.log.write_log(tr("Fieldbook loaded: ") + fname)
         self.log.write("    %d observations, %d coordinates" % (n_fb, n_co))
+        fb.close()
 
     def addp(self):
         """ Add point(s) to coordinate list entering coordinates

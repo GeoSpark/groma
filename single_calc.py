@@ -11,7 +11,7 @@ from PyQt5 import QtCore, QtGui, QtWidgets
 class Ui_SingleCalcDialog(object):
     def setupUi(self, SingleCalcDialog):
         SingleCalcDialog.setObjectName("SingleCalcDialog")
-        SingleCalcDialog.resize(829, 536)
+        SingleCalcDialog.resize(898, 536)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Fixed, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(0)
         sizePolicy.setVerticalStretch(0)

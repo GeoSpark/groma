@@ -192,12 +192,14 @@ class NetworkDialog(QDialog):
                                     dimension == 1 and type(feat['v']) is float and \
                                     type(feat['sd']) is float:
                                 o = PolarObservation(pid, None)
-                                o.hz = Angle(feat['hz'], 'GON') if type(feat['hz']) is float else None
-                                o.v = Angle(feat['v'], 'GON') if type(feat['v']) is float else None
+                                o.hz = Angle(feat['hz'], ANGLE_UNITS_STORE[config.angle_stored]) if type(
+                                    feat['hz']) is float else None
+                                o.v = Angle(feat['v'], ANGLE_UNITS_STORE[config.angle_stored]) if type(
+                                    feat['v']) is float else None
                                 if type(feat['v']) is float and \
                                         (st in adj_names or pid in adj_names):
                                     # add zenith if one end is unknown
-                                    o.v = Angle(feat['v'], 'GON')
+                                    o.v = Angle(feat['v'], ANGLE_UNITS_STORE[config.angle_stored])
                                 if type(feat['sd']) is float and \
                                         (st in adj_names or pid in adj_names):
                                     # add distance if one end is unknown
@@ -218,9 +220,9 @@ class NetworkDialog(QDialog):
                 QMessageBox.warning(self, tr("Warning"),
                                     tr('gama-local not installed or other runtime error'))
             else:
-                self.ui.ResultTextBrowser.append(t)
+                self.ui.ResultTextBrowser.append(t.decode('utf-8'))
                 self.log.write_log(tr("Network adjustment"))
-                self.log.write(t)
+                self.log.write(t.decode('utf-8'))
         else:
             QMessageBox.warning(self, tr("Warning"),
                                 tr('No points to adjust'))

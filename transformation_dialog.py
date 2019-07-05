@@ -7,13 +7,14 @@
 
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
-from __future__ import absolute_import
-
 import platform
 import webbrowser
 
 from qgis.PyQt.QtGui import QFont
 from qgis.PyQt.QtWidgets import QDialog, QFileDialog, QMessageBox
+
+# noinspection PyUnresolvedReferences
+from qgis.core import QgsVectorLayer, QgsProject
 
 from . import config
 from .calculation import *
@@ -158,17 +159,17 @@ class TransformationDialog(QDialog):
         if len(from_name) == 0 or len(to_name) == 0:
             return
         to_shp = QgsVectorLayer(to_name, "tmp_to_shape", "ogr")
-        QgsMapLayerRegistry.instance().addMapLayer(to_shp, False)
+        QgsProject.instance().addMapLayer(to_shp, False)
         to_points = get_known(2, "tmp_to_shape")
-        QgsMapLayerRegistry.instance().removeMapLayer("tmp_to_shape")
+        QgsProject.instance().removeMapLayer("tmp_to_shape")
         self.from_points = get_known(2, from_name)
         self.common = []
         self.used = []
         if self.from_points is None:
-            QMessageBox.warning(self, tr("Warning"), \
+            QMessageBox.warning(self, tr("Warning"),
                                 tr("No points with coordinates in source coordinate list"))
         elif to_points is None:
-            QMessageBox.warning(self, tr("Warning"), \
+            QMessageBox.warning(self, tr("Warning"),
                                 tr("No points with coordinates in target coordinate list"))
         else:
             for from_p in self.from_points:
@@ -177,7 +178,7 @@ class TransformationDialog(QDialog):
             for p in self.common:
                 self.ui.CommonList.addItem(p)
             if len(self.common) == 0:
-                QMessageBox.warning(self, tr("Warning"), \
+                QMessageBox.warning(self, tr("Warning"),
                                     tr("No common points in coordinate lists"))
 
     def onCalcButton(self):
@@ -194,13 +195,12 @@ class TransformationDialog(QDialog):
             QMessageBox.warning(self, tr("Warning"), tr("Select to shape file!"))
             return
         to_shp = QgsVectorLayer(to_name, "tmp_to_shape", "ogr")
-        QgsMapLayerRegistry.instance().addMapLayer(to_shp, False)
+        QgsProject.instance().addMapLayer(to_shp, False)
         for point_id in self.used:
             # get coords of points
             p_from = get_coord(point_id, from_list)
             p_to = get_coord(point_id, to_list)
             p_list.append([p_from, p_to])
-        w = ''
         if self.ui.OrthogonalRadio.isChecked():
             tr_res = Calculation.orthogonal_transformation(p_list)
             tr_func = self.ortho_tr
@@ -245,7 +245,7 @@ class TransformationDialog(QDialog):
             self.log.write(buf)
         # transform and store new points
         for p_num in self.from_points:
-            if not p_num in self.used and not p_num in self.common:
+            if p_num not in self.used and p_num not in self.common:
                 p = get_coord(p_num, from_list)
                 (e, n) = tr_func(p, tr_res)
                 buf = '%-20s ' % p.id + \
@@ -255,78 +255,78 @@ class TransformationDialog(QDialog):
                 self.log.write(buf)
                 pp = Point(p_num, e, n, pc='transformed')
                 ScPoint(pp).store_coord(2, "tmp_to_shape")
-        QgsMapLayerRegistry.instance().removeMapLayer("tmp_to_shape")
+        QgsProject.instance().removeMapLayer("tmp_to_shape")
 
-    def ortho_tr(self, p, tr):
+    def ortho_tr(self, p, trans):
         """ Calculate orthogonal transformation for a point
 
             :param p: point to transform (Point)
-            :param tr: transformation parameters
+            :param trans: transformation parameters
             :returns: list of easting and northin of transformed coordinates
         """
-        e = tr[0] + tr[2] * p.e - tr[3] * p.n
-        n = tr[1] + tr[3] * p.e + tr[2] * p.n
-        return (e, n)
+        e = trans[0] + trans[2] * p.e - trans[3] * p.n
+        n = trans[1] + trans[3] * p.e + trans[2] * p.n
+        return e, n
 
-    def affine_tr(self, p, tr):
+    def affine_tr(self, p, trans):
         """ Calculate affine transformation for a point
 
             :param p: point to transform (Point)
-            :param tr: transformation parameters
+            :param trans: transformation parameters
             :returns: list of easting and northin of transformed coordinates
         """
-        e = tr[0] + tr[2] * p.e + tr[3] * p.n
-        n = tr[1] + tr[4] * p.e + tr[5] * p.n
-        return (e, n)
+        e = trans[0] + trans[2] * p.e + trans[3] * p.n
+        n = trans[1] + trans[4] * p.e + trans[5] * p.n
+        return e, n
 
-    def poly_tr(self, p, tr, degree):
+    def poly_tr(self, p, trans, degree):
         """ Calculate nth order polynomial transformation for a point
 
             :param p: point to transform (Point)
-            :param tr: transformation parameters
+            :param trans: transformation parameters
             :param degree: degree of transformation
             :returns: list of easting and northin of transformed coordinates
         """
-        de = p.e - tr[2][0]
-        dn = p.n - tr[2][1]
-        l = 0
-        e = tr[2][2]
-        n = tr[2][3]
+        de = p.e - trans[2][0]
+        dn = p.n - trans[2][1]
+        ll = 0
+        e = trans[2][2]
+        n = trans[2][3]
         for j in range(0, degree + 1):
             for k in range(0, degree + 1):
                 if j + k <= degree:
-                    e += tr[0][l] * math.pow(de, k) * math.pow(dn, j)
-                    n += tr[1][l] * math.pow(de, k) * math.pow(dn, j)
-                    l += 1
-        return (e, n)
+                    e += trans[0][ll] * math.pow(de, k) * math.pow(dn, j)
+                    n += trans[1][ll] * math.pow(de, k) * math.pow(dn, j)
+                    ll += 1
+        return e, n
 
-    def poly3_tr(self, p, tr):
+    def poly3_tr(self, p, trans):
         """ Calculate 3rd order polynomial transformation for a point
 
             :param p: point to transform (Point)
-            :param tr: transformation parameters (list of lists)
+            :param trans: transformation parameters (list of lists)
             :returns: list of easting and northing of transformed coordinates
         """
-        (e, n) = self.poly_tr(p, tr, 3)
-        return (e, n)
+        (e, n) = self.poly_tr(p, trans, 3)
+        return e, n
 
-    def poly4_tr(self, p, tr):
+    def poly4_tr(self, p, trans):
         """ Calculate 4th order polynomial transformation for a point
 
             :param p: point to transform (Point)
-            :param tr: transformation parameters
+            :param trans: transformation parameters
             :returns: list of easting and northin of transformed coordinates
         """
-        return self.poly_tr(p, tr, 4)
+        return self.poly_tr(p, trans, 4)
 
-    def poly5_tr(self, p, tr):
+    def poly5_tr(self, p, trans):
         """ Calculate 5th order polynomial transformation for a point
 
             :param p: point to transform (Point)
-            :param tr: transformation parameters
+            :param trans: transformation parameters
             :returns: list of easting and northin of transformed coordinates
         """
-        return self.poly_tr(p, tr, 5)
+        return self.poly_tr(p, trans, 5)
 
     def onHelpButton(self):
         """ Open user's guide at Coordinate Transformation in the default web browser.

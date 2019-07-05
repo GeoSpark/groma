@@ -74,7 +74,14 @@ class Calculation(object):
                 e = e + 2 * PISEC
             E = e / RO * ref[2]
 
-            e = Angle(e, 'SEC').get_angle(ANGLE_UNITS_DISP[config.angle_displayed])
+            if ANGLE_UNITS_DISP[config.angle_displayed] in ('DEG', 'DMS'):
+                pass
+            elif ANGLE_UNITS_DISP[config.angle_displayed] == 'GON':
+                e = Angle(e, 'SEC').get_angle('GON')
+                e *= 10000.0
+            elif ANGLE_UNITS_DISP[config.angle_displayed] == 'RAD':
+                e = Angle(e, 'SEC').get_angle('RAD')
+
             ret.append((ref[1].point_id, (ref[1].pc if ref[1].pc is not None else "-"),
                         ref[4].get_angle(ANGLE_UNITS_DISP[config.angle_displayed]),
                         ref[5].get_angle(ANGLE_UNITS_DISP[config.angle_displayed]),
@@ -422,17 +429,18 @@ class Calculation(object):
                                                     t[i].d,
                                                     de[i], dn[i], de[i] + ve[i], dn[i] + vn[i])
                 else:
-                    ResultLog.resultlog_message += u"%-10s %10.4f %8.3f %8.3f %8.3f %10.3f %10.3f\n" % \
+                    ResultLog.resultlog_message += u"%-10s %-14s %8.3f %8.3f %8.3f %10.3f %10.3f\n" % \
                                                    ((trav_obs[i][0].p.id if trav_obs[i][0].p is not None else "-"),
-                                                    beta[i].get_angle('GON'), t[i].d,
+                                                    beta[i].get_angle(ANGLE_UNITS_DISP[config.angle_displayed]), t[i].d,
                                                     de[i], dn[i], de[i] + ve[i], dn[i] + vn[i])
             else:
                 if beta[i] is None:
                     ResultLog.resultlog_message += u"%-10s %10s\n" % \
                                                    (trav_obs[i][0].p.id, "")
                 else:
-                    ResultLog.resultlog_message += u"%-10s %10.4f\n" % \
-                                                   (trav_obs[i][0].p.id, beta[i].get_angle('GON'))
+                    ResultLog.resultlog_message += u"%-10s %-14s\n" % \
+                                                   (trav_obs[i][0].p.id,
+                                                    beta[i].get_angle(ANGLE_UNITS_DISP[config.angle_displayed]))
 
             if i > 0:
                 if free is True:
@@ -465,8 +473,9 @@ class Calculation(object):
             if not free:
                 ResultLog.resultlog_message += "           %10s          %8.3f %8.3f\n" % ("", dde, ddn)
         else:
-            ResultLog.resultlog_message += "           %10.4f                            %10.3f %10.3f\n" % \
-                                           (Angle(0).get_angle('GON'), ee[n - 1] - ee[0], nn[n - 1] - nn[0])
+            ResultLog.resultlog_message += "           %-14s                            %10.3f %10.3f\n" % \
+                                           (Angle(0).get_angle(ANGLE_UNITS_DISP[config.angle_displayed]),
+                                            ee[n - 1] - ee[0], nn[n - 1] - nn[0])
             ResultLog.resultlog_message += "           %10.4f %8.3f %8.3f %8.3f\n" % \
                                            (sumbeta * 200.0 / math.pi, sumt, sumde, sumdn)
             ResultLog.resultlog_message += "           %10.4f\n" % \

@@ -6,8 +6,6 @@
 
 .. moduleauthor: Zoltan Siki <siki@agt.bme.hu>
 """
-from __future__ import absolute_import
-
 import platform
 import webbrowser
 
