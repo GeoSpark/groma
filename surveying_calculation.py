@@ -218,7 +218,7 @@ class SurveyingCalculation(object):
                                   'template' + QDir().separator() + 'coord_template')
         for ext in ['.shp', '.shx', '.dbf']:
             QFile(tempbase + ext).copy(ofbase + ext)
-        coord = QgsVectorLayer(ofbase + '.shp', QFileInfo(ofbase).baseName(), "ogr")
+        coord = QgsVectorLayer(ofbase + '.shp', QFileInfo(ofbase).baseName(), 'ogr')
         if coord.isValid():
             QgsProject.instance().addMapLayer(coord)
 
@@ -290,13 +290,14 @@ class SurveyingCalculation(object):
             tempname = QDir.cleanPath(self.plugin_dir + QDir().separator() +
                                       'template' + QDir().separator() + 'fb_template.sqlite')
             if not QFile(tempname).copy(ofname):
-                # TODO: Allow overwriting of fieldbook file.
-                QMessageBox.warning(self.iface.mainWindow(),
-                                    tr('File warning'),
-                                    tr('Error copying fieldbook template, target file exists?'),
-                                    QMessageBox.Ok)
-                return
-            fb_dbf = QgsVectorLayer(ofname, QFileInfo(ofname).baseName(), "ogr")
+                res = QMessageBox.warning(self.iface.mainWindow(),
+                                          tr('File warning'),
+                                          tr('Fieldbook file exists. Replace it?'),
+                                          QMessageBox.Yes | QMessageBox.No, QMessageBox.No)
+
+                if res == QMessageBox.No:
+                    return
+            fb_dbf = QgsVectorLayer(ofname, QFileInfo(ofname).baseName(), 'ogr')
             if not fb_dbf or not fb_dbf.isValid():
                 QMessageBox.warning(self.iface.mainWindow(),
                                     tr('File warning'),

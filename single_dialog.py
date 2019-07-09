@@ -15,8 +15,7 @@ from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QFont, QStandardItem
 from qgis.PyQt.QtWidgets import QDialog, QListWidgetItem, QMessageBox
 
-# noinspection PyUnresolvedReferences
-from qgis.core import QgsMessageLog, Qgis
+from qgis.core import QgsMessageLog, Qgis, QgsApplication
 from qgis.utils import iface
 
 from .prettytable.prettytable import PrettyTable
@@ -278,7 +277,7 @@ class SingleDialog(QDialog):
                 z, rows = Calculation.orientation(s, ref_list)
             except (ValueError, TypeError, AttributeError) as e:
                 iface.messageBar().pushMessage('SurveyingCalculation', str(e), level=Qgis.Critical)
-                QgsMessageLog.logMessage(str(e), 'SurveyingCalculation', level=Qgis.Critical)
+                QgsApplication.messageLog().logMessage(str(e), 'SurveyingCalculation', level=Qgis.Critical)
                 return
 
             ang_err_label = 'Ang err'

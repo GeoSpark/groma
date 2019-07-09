@@ -7,8 +7,7 @@
 
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 """
-# noinspection PyUnresolvedReferences
-from qgis.core import QgsProject, QgsFeature, QgsGeometry, QgsPointXY, QgsMapLayer, QgsMessageLog
+from qgis.core import QgsProject, QgsFeature, QgsGeometry, QgsPointXY, QgsMapLayer
 from .base_classes import *
 from . import config
 

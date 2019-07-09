@@ -8,7 +8,6 @@
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 
 """
-# noinspection PyUnresolvedReferences
 from qgis.core import QgsMessageLog, Qgis
 
 from . import config
