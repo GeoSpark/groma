@@ -20,3 +20,4 @@ TODO:
 * Output results to the QGIS log
 * Turn message boxes to toasts
 * Get metadata from input file
+* Add a serial download dialog

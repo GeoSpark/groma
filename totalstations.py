@@ -1019,7 +1019,6 @@ class NikonRaw(TotalStation):
             #     azimuth = fs[6]
             #     circle = fs[7]
 
-            # TODO: Not sure of the difference between fs[6] (backsight azimuth) and fs[7] (backsight horizontal angle)
             # try:
             #     self.last_station['hz'] = Angle(float(fs[7]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
             # except ValueError:

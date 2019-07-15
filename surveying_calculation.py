@@ -206,7 +206,7 @@ class SurveyingCalculation(object):
         """
         ofname, __ = QFileDialog.getSaveFileName(self.iface.mainWindow(),
                                                  tr('QGIS co-ordinate list'),
-                                                 filter=tr('Shape file (*.shp)'))
+                                                 filter=tr('SpatiaLite file (*.sqlite)'))
         if not ofname:
             return
         if QRegExp('coord_').indexIn(QFileInfo(ofname).baseName()):
@@ -216,9 +216,8 @@ class SurveyingCalculation(object):
                                 QDir().separator() + QFileInfo(ofname).baseName())
         tempbase = QDir.cleanPath(self.plugin_dir + QDir().separator() +
                                   'template' + QDir().separator() + 'coord_template')
-        for ext in ['.shp', '.shx', '.dbf']:
-            QFile(tempbase + ext).copy(ofbase + ext)
-        coord = QgsVectorLayer(ofbase + '.shp', QFileInfo(ofbase).baseName(), 'ogr')
+        QFile(tempbase + '.sqlite').copy(ofbase + '.sqlite')
+        coord = QgsVectorLayer(ofbase + '.sqlite', QFileInfo(ofbase).baseName(), 'ogr')
         if coord.isValid():
             QgsProject.instance().addMapLayer(coord)
 
@@ -238,8 +237,7 @@ class SurveyingCalculation(object):
                                 QDir().separator() + QFileInfo(ofname).baseName())
         tempbase = QDir.cleanPath(self.plugin_dir + QDir().separator() +
                                   'template' + QDir().separator() + 'fb_template')
-        for ext in ['.sqlite']:
-            QFile(tempbase + ext).copy(ofbase + ext)
+        QFile(tempbase + '.sqlite').copy(ofbase + '.sqlite')
         fb = QgsVectorLayer(ofbase + '.sqlite', QFileInfo(ofbase).baseName(), 'ogr')
         if fb.isValid():
             QgsProject.instance().addMapLayer(fb)

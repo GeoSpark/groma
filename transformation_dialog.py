@@ -13,7 +13,6 @@ import webbrowser
 from qgis.PyQt.QtGui import QFont
 from qgis.PyQt.QtWidgets import QDialog, QFileDialog, QMessageBox
 
-# noinspection PyUnresolvedReferences
 from qgis.core import QgsVectorLayer, QgsProject
 
 from . import config
@@ -97,7 +96,7 @@ class TransformationDialog(QDialog):
         """ Select target shape file
         """
         fname, __ = QFileDialog.getOpenFileName(None, tr('Coordinate list'),
-                                                filter=tr('Coordinate list file (*.shp);;'))
+                                                filter=tr('Coordinate list file (*.sqlite);;'))
         if fname:
             self.ui.ToShapeEdit.setText(fname)
             if len(self.ui.FromLayerComboBox.currentText()):
@@ -158,10 +157,10 @@ class TransformationDialog(QDialog):
         to_name = self.ui.ToShapeEdit.text()
         if len(from_name) == 0 or len(to_name) == 0:
             return
-        to_shp = QgsVectorLayer(to_name, "tmp_to_shape", "ogr")
-        QgsProject.instance().addMapLayer(to_shp, False)
-        to_points = get_known(2, "tmp_to_shape")
-        QgsProject.instance().removeMapLayer("tmp_to_shape")
+        to_vector = QgsVectorLayer(to_name, 'tmp_to_vector', 'ogr')
+        QgsProject.instance().addMapLayer(to_vector, False)
+        to_points = get_known(2, 'tmp_to_vector')
+        QgsProject.instance().removeMapLayer('tmp_to_vector')
         self.from_points = get_known(2, from_name)
         self.common = []
         self.used = []
@@ -194,8 +193,8 @@ class TransformationDialog(QDialog):
         if len(to_name) == 0:
             QMessageBox.warning(self, tr("Warning"), tr("Select to shape file!"))
             return
-        to_shp = QgsVectorLayer(to_name, "tmp_to_shape", "ogr")
-        QgsProject.instance().addMapLayer(to_shp, False)
+        to_vector = QgsVectorLayer(to_name, 'tmp_to_vector', 'ogr')
+        QgsProject.instance().addMapLayer(to_vector, False)
         for point_id in self.used:
             # get coords of points
             p_from = get_coord(point_id, from_list)
