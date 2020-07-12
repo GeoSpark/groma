@@ -7,7 +7,11 @@
 .. moduleauthor: Zoltan Siki <siki@agt.bme.hu>
 """
 from __future__ import absolute_import
-from qgis.PyQt.QtWidgets import QDialog, QMessageBox
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtWidgets import QDialog
+from qgis.core import Qgis
+from qgis.utils import iface
+
 from .coords import Ui_CoordDialog
 from .base_classes import tr
 
@@ -20,7 +24,7 @@ class CoordDialog(QDialog):
         """ Initialize dialog data and event handlers
 
         """
-        super(CoordDialog, self).__init__()
+        super(CoordDialog, self).__init__(flags=Qt.Dialog)
         self.point1 = point1
         self.point2 = point2
         self.ui = Ui_CoordDialog()
@@ -53,7 +57,8 @@ class CoordDialog(QDialog):
             w = float(self.ui.EndEast.text())
             w = float(self.ui.EndNorth.text())
         except ValueError:
-            QMessageBox.warning(self, tr("Warning"), tr("Invalid coordinate value"))
+            iface.messageBar().pushMessage(tr('SurveyingCalculation'),
+                                           tr('Invalid coordinate value'), level=Qgis.Critical)
             return
         self.accept()
 

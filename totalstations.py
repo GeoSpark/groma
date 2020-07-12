@@ -12,8 +12,8 @@ import re
 
 # noinspection PyUnresolvedReferences
 from qgis.core import QgsMessageLog, Qgis
-from . import config
-from .base_classes import Angle, FOOT2M, ANGLE_UNITS_STORE
+from ls import config
+from ls.base_classes import Angle, FOOT2M, ANGLE_UNITS_STORE
 
 
 class TotalStation(object):
@@ -1020,7 +1020,8 @@ class NikonRaw(TotalStation):
             #     circle = fs[7]
 
             # try:
-            #     self.last_station['hz'] = Angle(float(fs[7]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+            #     self.last_station['hz'] =
+            #         Angle(float(fs[7]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
             # except ValueError:
             #     self.last_station['hz'] = 0.0
 
@@ -1033,8 +1034,10 @@ class NikonRaw(TotalStation):
             # For stations we store the instrument height in the target height field.
             self.last_station['th'] = self.last_station['ih']
             self.last_station['sd'] = float(fs[3])
-            self.last_station['hz'] = Angle(float(fs[4]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
-            self.last_station['v'] = Angle(float(fs[5]), self.angle_unit).get_angle(ANGLE_UNITS_STORE[config.angle_stored])
+            self.last_station['hz'] = Angle(float(fs[4]), self.angle_unit).get_angle(
+                ANGLE_UNITS_STORE[config.angle_stored])
+            self.last_station['v'] = Angle(float(fs[5]), self.angle_unit).get_angle(
+                ANGLE_UNITS_STORE[config.angle_stored])
 
             res = self.last_station
 

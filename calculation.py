@@ -9,10 +9,11 @@
 
 """
 from qgis.core import QgsMessageLog, Qgis
+from qgis.utils import iface
 
-from . import config
-from .base_classes import *
-from .resultlog import *
+from ls import config
+from ls.base_classes import *
+from ls.resultlog import *
 
 
 class Calculation(object):
@@ -248,7 +249,7 @@ class Calculation(object):
             free = True  # free traverse
 
         # collect measurements in traverse
-        beta = [None] * n
+        beta = []
         t = [None] * n
         t1 = [None] * n
         t2 = [None] * n
@@ -257,45 +258,39 @@ class Calculation(object):
             st = trav_obs[i][0]
             obsprev = trav_obs[i][1]
             obsnext = trav_obs[i][2]
+            beta.append(st.o.hz)
+
             if i == 0:
-                beta[0] = st.o.hz
                 if beta[0] is None:
                     # no orientation on start
                     if free is True:
                         ResultLog.resultlog_message += \
-                            tr("Error: No orientation on start point and no coordinates on end point!") + "\n"
+                            tr('Error: No orientation on start point and no coordinates on end point!') + '\n'
                         return None
                     else:
                         ResultLog.resultlog_message += \
-                            tr("Warning: No orientation on start point - inserted traverse.") + "\n"
-
-            if i == n - 1:
-                beta[i] = st.o.hz
-                if beta[i] is None:
-                    # no orientation on end
-                    ResultLog.resultlog_message += \
-                        tr("Warning: No orientation on end point.") + "\n"
-
-            if i != 0 and i != n - 1 and (
-                    obsprev is None or obsnext is None or obsprev.hz is None or obsnext.hz is None):
-                # no angle at angle point
-                ResultLog.resultlog_message += \
-                    tr("Error: No angle at point %s!") % trav_obs[i][0].p.id + "\n"
-                return None
-
-            if i == 0:
+                            tr('Warning: No orientation on start point - inserted traverse.') + '\n'
                 # there was orientation on first
                 if beta[0] is not None and obsnext is not None and obsnext.hz is not None:
                     beta[0].set_angle(beta[0].get_angle() + obsnext.hz.get_angle())
                 else:
                     beta[0] = None
             elif i == n - 1:
-                if beta[i] is not None and beta[0] is not None and obsprev is not None and obsprev.hz is not None:
-                    # there was orientation on last and first
-                    beta[i].set_angle(math.pi * 2 - (beta[i].get_angle() + obsprev.hz.get_angle()))
-                else:
-                    beta[i] = None
+                if beta[i] is None:
+                    # no orientation on end
+                    ResultLog.resultlog_message += tr('Warning: No orientation on end point.') + '\n'
+                    if beta[i] is not None and beta[0] is not None and obsprev is not None and obsprev.hz is not None:
+                        # there was orientation on last and first
+                        beta[i].set_angle(math.pi * 2 - (beta[i].get_angle() + obsprev.hz.get_angle()))
+                    else:
+                        beta[i] = None
             else:
+                if obsprev is None or obsnext is None or obsprev.hz is None or obsnext.hz is None:
+                    # no angle at angle point
+                    ResultLog.resultlog_message += \
+                        tr('Error: No angle at point %s!') % trav_obs[i][0].p.id + '\n'
+                    return None
+
                 beta[i] = Angle(obsnext.hz.get_angle() - obsprev.hz.get_angle())
 
             if beta[i] is not None:

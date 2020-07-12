@@ -189,7 +189,8 @@ class Angle(object):
             mins, sec = divmod(secs, 60)
             deg, mins = divmod(mins, 60)
             deg = int(deg)
-            dms = '%d° %02d\' %02d"' % (deg, mins, sec)
+            dms = '%d-%02d-%02d' % (deg, mins, sec)
+            # dms = '%d° %02d\' %02d"' % (deg, mins, sec)
         except (ValueError, TypeError):
             dms = None
         return dms
@@ -521,7 +522,7 @@ def compare(a, b, tol=0.001):
     """
     if a is None and b is None:
         return True
-    if type(a) != type(b):
+    if not isinstance(a, type(b)):
         return False
     if type(a) is str or type(a) is int or type(a) is bool:
         # simple numeric, string variables

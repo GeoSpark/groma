@@ -7,63 +7,46 @@
 
 .. moduleauthor:: Zoltan Siki <siki@agt.bme.hu>
 """
-from builtins import range
-from builtins import object
-import datetime
-import time
+import logging
 
-from qgis.PyQt.QtCore import QDir, QFile, QIODevice, QTextStream
+from qgis.PyQt.QtCore import QDir
+from qgis.core import Qgis, QgsMessageLog
+
 
 class ResultLog(object):
     """ File based logging for Surveying Calculations. Events & calculation results are logged into this file.
     """
     resultlog_message = ""
-    
-    def __init__(self, logfile, repeat_count=3):
+
+    def __init__(self, logfile):
         """ initialize log file if the given file cannot be opened for output then a SurveyingCalculation.log file in the temperary directory will be used
 
             :param logfile: name of the log file it will be created if neccessary, messages will be appended to the end
-            :param repeat_count: retry count on fail accessing log file
         """
-        self.repeat_count = repeat_count   # retry count for i/o operations
-        self.set_log_path(logfile)
+        self.logfile = self.set_log_path(logfile)
+        QgsMessageLog.logMessage(f'Log file set to {self.logfile}', 'SurveyingCalculation', level=Qgis.Info)
 
     def set_log_path(self, log_path):
-        for i in range(self.repeat_count * 2):
-            f = QFile( log_path )
-            if not f.open(QIODevice.Append | QIODevice.Text):
-                f = None
-                if i == self.repeat_count:
-                    log_path = QDir.temp().absoluteFilePath("SurveyingCalculation.log")
-        f.close()
-        self.logfile = log_path
+        log_path = QDir.temp().absoluteFilePath(log_path)
+        logging.basicConfig(filename=log_path, level=logging.DEBUG)
+        return log_path
 
     def reset(self):
         """ Delete content of log file
         """
-        for i in range(self.repeat_count):
-            if QFile(self.logfile).remove():
-                break
+        pass
 
-    def write(self, msg = ""):
+    def write(self, msg=""):
         """ Write a  simple message to log
 
             :param msg: message to write
         """
-        for i in range(self.repeat_count):
-            f = QFile( self.logfile )
-            if not f.open(QIODevice.Append | QIODevice.Text):
-                continue
-            stream = QTextStream(f)                
-            stream << (msg+'\n')
-            break
-        f.close()
+        self.write_log(msg)
 
     def write_log(self, msg):
         """ Write log message with date & time
 
             :param msg: message to write
         """
-        d = time.strftime("%Y-%m-%d %H:%M:%S",
-            datetime.datetime.now().timetuple())
-        self.write(d + " - " + msg)
+        logging.info(msg)
+        QgsMessageLog.logMessage(msg, 'SurveyingCalculation', level=Qgis.Info)

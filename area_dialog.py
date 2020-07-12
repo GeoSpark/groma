@@ -8,7 +8,11 @@
 """
 from __future__ import absolute_import
 from builtins import str
-from qgis.PyQt.QtWidgets import QDialog, QMessageBox
+from qgis.PyQt.QtCore import Qt
+from qgis.PyQt.QtWidgets import QDialog
+from qgis.core import Qgis
+from qgis.utils import iface
+
 from .area_div import Ui_AreaDivDialog
 from .base_classes import tr
 
@@ -20,7 +24,7 @@ class AreaDialog(QDialog):
     def __init__(self, total_area, div_area, rotate):
         """ Initialize dialog data and event handlers
         """
-        super(AreaDialog, self).__init__()
+        super(AreaDialog, self).__init__(flags=Qt.Dialog)
         self.total_area = int(total_area + 0.5)
         self.div_area = int(div_area + 0.5)
         self.rotate = rotate
@@ -53,13 +57,13 @@ class AreaDialog(QDialog):
         try:
             a = float(self.ui.AreaLineEdit.text())
         except ValueError:
-            QMessageBox.warning(self, tr("Warning"), tr("Invalid area value"))
+            iface.messageBar().pushMessage(tr('Warning'), tr('Invalid area value'), level=Qgis.Warning)
             return
         if a <= 0:
-            QMessageBox.warning(self, tr("Warning"), tr("Invalid area value"))
+            iface.messageBar().pushMessage(tr('Warning'), tr('Invalid area value'), level=Qgis.Warning)
             return
         if not self.ui.OnePointRadio.isChecked() and not self.ui.TwoPointRadio.isChecked():
-            QMessageBox.warning(self, tr("Warning"), tr("Select division method"))
+            iface.messageBar().pushMessage(tr('Warning'), tr('Select division method'), level=Qgis.Warning)
             return
         self.accept()
 

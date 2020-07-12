@@ -13,9 +13,8 @@ import webbrowser
 
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QFont, QStandardItem
-from qgis.PyQt.QtWidgets import QDialog, QListWidgetItem, QMessageBox
+from qgis.PyQt.QtWidgets import QDialog, QListWidgetItem
 
-from qgis.core import QgsMessageLog, Qgis, QgsApplication
 from qgis.utils import iface
 
 from .prettytable.prettytable import PrettyTable
@@ -32,7 +31,7 @@ class SingleDialog(QDialog):
     def __init__(self, log):
         """ Initialize dialog data and event handlers
         """
-        super(SingleDialog, self).__init__()
+        super(SingleDialog, self).__init__(flags=Qt.Dialog)
         self.ui = Ui_SingleCalcDialog()
         self.ui.setupUi(self)
         self.log = log
@@ -243,23 +242,28 @@ class SingleDialog(QDialog):
     def onCalcButton(self):
         """ Start a calculation when the Calculate button pushed.
         """
+        # TODO: Disable the calculate button until we have a valid set up.
         if self.ui.radioButtonGroup.checkedId() == -1:
-            QMessageBox.warning(self, tr("Warning"), tr("Select the type of calculation!"))
+            iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr('Select the type of calculation!'),
+                                           level=Qgis.Critical)
             return
 
         # get the selected stations
         stn1 = self.ui.Station1Combo.itemData(self.ui.Station1Combo.currentIndex())
         if stn1 is None:
-            QMessageBox.warning(self, tr("Warning"), tr("Select station point 1!"))
+            iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr('Select station point 1!'),
+                                           level=Qgis.Critical)
             self.ui.Station1Combo.setFocus()
             return
         stn2 = self.ui.Station2Combo.itemData(self.ui.Station2Combo.currentIndex())
         if stn2 is None and self.ui.IntersectRadio.isChecked():
-            QMessageBox.warning(self, tr("Warning"), tr("Select station point 2!"))
+            iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr('Select station point 2!'),
+                                           level=Qgis.Critical)
             self.ui.Station2Combo.setFocus()
             return
         if self.ui.TargetList.count() == 0:
-            QMessageBox.warning(self, tr("Warning"), tr("Add points to Used Points list!"))
+            iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr('Add points to Used Points list!'),
+                                           level=Qgis.Critical)
             self.ui.TargetList.setFocus()
             return
 
@@ -276,8 +280,7 @@ class SingleDialog(QDialog):
             try:
                 z, rows = Calculation.orientation(s, ref_list)
             except (ValueError, TypeError, AttributeError) as e:
-                iface.messageBar().pushMessage('SurveyingCalculation', str(e), level=Qgis.Critical)
-                QgsApplication.messageLog().logMessage(str(e), 'SurveyingCalculation', level=Qgis.Critical)
+                iface.messageBar().pushMessage(tr('SurveyingCalculation'), str(e), level=Qgis.Critical)
                 return
 
             ang_err_label = 'Ang err'
@@ -310,7 +313,7 @@ class SingleDialog(QDialog):
             res = "\n" + tr('Orientation') + ' - %s\n' % s.p.id
             res += x.get_string()
             res += u"\n%-48s %s\n" % \
-                (tr('Average orientation angle'), z.get_angle(ANGLE_UNITS_DISP[config.angle_displayed]))
+                   (tr('Average orientation angle'), z.get_angle(ANGLE_UNITS_DISP[config.angle_displayed]))
             self.ui.ResultTextBrowser.append(res)
             self.log.write()
             self.log.write(res)
@@ -347,8 +350,9 @@ class SingleDialog(QDialog):
                     else:
                         tp.store_coord(3)
                 else:
-                    QMessageBox.warning(self, tr("Warning"),
-                                        tr("Radial survey on %s cannot be calculated!") % targetp[0])
+                    iface.messageBar().pushMessage(tr('SurveyingCalculation'),
+                                                   tr('Radial survey on %s cannot be calculated!') % targetp[0],
+                                                   level=Qgis.Critical)
 
             res = "\n" + tr("Radial Survey") + '\n'
             res += x.get_string()
@@ -361,7 +365,8 @@ class SingleDialog(QDialog):
             s1 = get_station(stn1[0], stn1[1], stn1[2])
             s2 = get_station(stn2[0], stn2[1], stn2[2])
             if stn1 == stn2:
-                QMessageBox.warning(self, tr("Warning"), tr("Station 1 and station 2 are the same!"))
+                iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr('Station 1 and station 2 are the same!'),
+                                               level=Qgis.Critical)
                 self.ui.Station1Combo.setFocus()
                 return
 
@@ -392,8 +397,9 @@ class SingleDialog(QDialog):
                     tp1.store_coord(2)
                     x.add_row(row)
                 else:
-                    QMessageBox.warning(self, tr("Warning"),
-                                        tr("Intersecion on %s cannot be calculated!") % targetp1[0])
+                    iface.messageBar().pushMessage(tr('SurveyingCalculation'),
+                                                   tr('Intersecion on %s cannot be calculated!') % targetp1[0],
+                                                   level=Qgis.Critical)
 
             res = "\n" + tr("Intersection") + '\n'
             res += x.get_string()
@@ -405,7 +411,8 @@ class SingleDialog(QDialog):
             # resection
             s = get_station(stn1[0], stn1[1], stn1[2])
             if self.ui.TargetList.count() != 3:
-                QMessageBox.warning(self, tr("Warning"), tr("Select exactly 3 used points for resection!"))
+                iface.messageBar().pushMessage(tr('SurveyingCalculation'),
+                                               tr('Select exactly 3 used points for resection!'), level=Qgis.Critical)
                 self.ui.TargetList.setFocus()
                 return
             targetp1 = self.ui.TargetList.item(0).data(Qt.UserRole)
