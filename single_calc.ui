@@ -36,6 +36,9 @@
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_6">
    <item>
+    <widget class="QWidget" name="MessageBar" native="true"/>
+   </item>
+   <item>
     <layout class="QHBoxLayout" name="horizontalLayout_3">
      <item>
       <widget class="QGroupBox" name="RadioGroup">
@@ -175,7 +178,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Station (1)</string>
+           <string>Station 1</string>
           </property>
          </widget>
         </item>
@@ -204,7 +207,7 @@
            </sizepolicy>
           </property>
           <property name="text">
-           <string>Station (2)</string>
+           <string>Station 2</string>
           </property>
          </widget>
         </item>

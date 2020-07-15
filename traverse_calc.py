@@ -2,11 +2,13 @@
 
 # Form implementation generated from reading ui file 'traverse_calc.ui'
 #
-# Created by: PyQt5 UI code generator 5.10.1
+# Created by: PyQt5 UI code generator 5.14.1
 #
 # WARNING! All changes made in this file will be lost!
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_TraverseCalcDialog(object):
     def setupUi(self, TraverseCalcDialog):
@@ -23,6 +25,9 @@ class Ui_TraverseCalcDialog(object):
         TraverseCalcDialog.setLocale(QtCore.QLocale(QtCore.QLocale.English, QtCore.QLocale.UnitedKingdom))
         self.verticalLayout_6 = QtWidgets.QVBoxLayout(TraverseCalcDialog)
         self.verticalLayout_6.setObjectName("verticalLayout_6")
+        self.MessageBar = QtWidgets.QWidget(TraverseCalcDialog)
+        self.MessageBar.setObjectName("MessageBar")
+        self.verticalLayout_6.addWidget(self.MessageBar)
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.RadioGroup = QtWidgets.QGroupBox(TraverseCalcDialog)
@@ -302,14 +307,3 @@ class Ui_TraverseCalcDialog(object):
         self.CalcButton.setText(_translate("TraverseCalcDialog", "Calculate"))
         self.ResetButton.setText(_translate("TraverseCalcDialog", "Reset"))
         self.CloseButton.setText(_translate("TraverseCalcDialog", "Close"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    TraverseCalcDialog = QtWidgets.QDialog()
-    ui = Ui_TraverseCalcDialog()
-    ui.setupUi(TraverseCalcDialog)
-    TraverseCalcDialog.show()
-    sys.exit(app.exec_())
-

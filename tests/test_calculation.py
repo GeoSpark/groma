@@ -423,14 +423,9 @@ def test_traverse2():
     plist = Calculation.traverse([[sKtra, None, oK_1tra], [s1tra, o1_Ktra, o1_2tra], [s2tra, o2_1tra, o2_3tra],
                                   [s3tra, o3_2tra, o3_Vtra], [sVtra, oV_3tra, None]])
 
-    # The numbers from the original test don't work, but I think it's the test not the results because every other
-    # test passes.
-    # assert compare(plist[0], Point('1', 599787.74865, 149085.0079))
-    # assert compare(plist[1], Point('2', 599718.9691, 149345.3886))
-    # assert compare(plist[2], Point('3', 599802.5094, 149492.7786))
-    assert compare(plist[0], Point('1', 599834.8445, 149132.2651))
-    assert compare(plist[1], Point('2', 599804.4474, 149407.9007))
-    assert compare(plist[2], Point('3', 599855.7661, 149625.8071))
+    assert compare(plist[0], Point('1', 599787.74865, 149085.0079))
+    assert compare(plist[1], Point('2', 599718.9691, 149345.3886))
+    assert compare(plist[2], Point('3', 599802.5094, 149492.7786))
 
 
 def test_traverse3():

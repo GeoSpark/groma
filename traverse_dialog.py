@@ -11,13 +11,15 @@ import webbrowser
 
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QStandardItem, QFont
-from qgis.PyQt.QtWidgets import QDialog, QListWidgetItem, QMessageBox
+from qgis.PyQt.QtWidgets import QDialog, QListWidgetItem, QMessageBox, QSizePolicy
+from qgis.gui import QgsMessageBar
+from qgis.utils import iface
 
-from . import config
-from .calculation import Calculation
-from .resultlog import *
-from .surveying_util import *
-from .traverse_calc import Ui_TraverseCalcDialog
+from ls.exceptions import CalculationError
+from ls.calculation import Calculation
+from ls.resultlog import *
+from ls.surveying_util import *
+from ls.traverse_calc import Ui_TraverseCalcDialog
 
 
 class TraverseDialog(QDialog):
@@ -30,6 +32,9 @@ class TraverseDialog(QDialog):
         super(TraverseDialog, self).__init__()
         self.ui = Ui_TraverseCalcDialog()
         self.ui.setupUi(self)
+        self.ui.MessageBar = QgsMessageBar()
+        self.ui.MessageBar.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.ui.verticalLayout_6.insertWidget(0, self.ui.MessageBar, 0)
         self.log = log
 
         # event handlers
@@ -253,23 +258,24 @@ class TraverseDialog(QDialog):
             Start a traverse calculation when the Calculate button pushed.
         """
         if self.ui.buttonGroup.checkedId() == -1:
-            QMessageBox.warning(self, tr("Warning"), tr("Select the type of traverse line!"))
+            self.ui.MessageBar.pushMessage(tr('Warning'), tr('Select the type of traverse line'), level=Qgis.Warning)
             return
 
         # get the selected stations
         startpoint = self.ui.StartPointComboBox.itemData(self.ui.StartPointComboBox.currentIndex())
+
         if startpoint is None:
-            QMessageBox.warning(self, tr("Warning"), tr("Select start point!"))
-            self.ui.StartPointComboBox.setFocus()
+            self.ui.MessageBar.pushMessage(tr('Warning'), tr('Select a start point'), level=Qgis.Warning)
             return
+
         endpoint = self.ui.EndPointComboBox.itemData(self.ui.EndPointComboBox.currentIndex())
+
         if endpoint is None:
-            QMessageBox.warning(self, tr("Warning"), tr("Select end point!"))
-            self.ui.EndPointComboBox.setFocus()
+            self.ui.MessageBar.pushMessage(tr('Warning'), tr('Select a end point'), level=Qgis.Warning)
             return
+
         if self.ui.OrderList.count() == 0:
-            QMessageBox.warning(self, tr("Warning"), tr("Add points to point list!"))
-            self.ui.OrderList.setFocus()
+            self.ui.MessageBar.pushMessage(tr('Warning'), tr('Add points to the points list'), level=Qgis.Warning)
             return
 
         # fill stations list
@@ -325,34 +331,31 @@ class TraverseDialog(QDialog):
                 if reply == QMessageBox.No:
                     return
 
-        if self.ui.OpenRadio.isChecked():
-            plist = Calculation.traverse(trav_obs, True)
-        else:
-            plist = Calculation.traverse(trav_obs, False)
+        try:
+            plist = Calculation.traverse(trav_obs, self.ui.OpenRadio.isChecked())
+        except CalculationError as e:
+            iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr(str(e)), level=Qgis.Critical)
+            self.log.write_log(tr(str(e)), level=Qgis.Critical)
+            return
 
-        if plist is not None:
-            # store newly calculated coordinates
-            for pt in plist:
-                tp = ScPoint(pt.id)
-                tp.set_coord(pt)
-                tp.store_coord(2)
-            traversing_type = self.ui.buttonGroup.checkedButton().text()
-            self.ui.ResultTextBrowser.append("\n" + tr("Traversing") + " - %s" % traversing_type)
-            self.ui.ResultTextBrowser.append(tr("            bearing    bw dist"))
-            self.ui.ResultTextBrowser.append(tr("Point        angle     distance  (dE)     (dN)       dE         dN"))
-            self.ui.ResultTextBrowser.append(
-                tr("           correction  fw dist    corrections      Easting    Northing"))
-            self.log.write()
-            self.log.write_log(tr("Traversing") + " - %s" % traversing_type)
-            self.log.write(tr("            bearing    bw dist"))
-            self.log.write(tr("Point        angle     distance  (dE)     (dN)       dE         dN"))
-            self.log.write(tr("           correction  fw dist    corrections      Easting    Northing"))
-            self.ui.ResultTextBrowser.append(ResultLog.resultlog_message)
-            self.log.write(ResultLog.resultlog_message)
-        else:
-            QMessageBox.warning(self, tr("Warning"), tr("Traverse line cannot be calculated!"))
-            self.ui.ResultTextBrowser.append(ResultLog.resultlog_message)
-            self.log.write(ResultLog.resultlog_message)
+        # store newly calculated coordinates
+        for pt in plist:
+            tp = ScPoint(pt.id)
+            tp.set_coord(pt)
+            tp.store_coord(2)
+        traversing_type = self.ui.buttonGroup.checkedButton().text()
+        self.ui.ResultTextBrowser.append("\n" + tr("Traversing") + " - %s" % traversing_type)
+        self.ui.ResultTextBrowser.append(tr("            bearing    bw dist"))
+        self.ui.ResultTextBrowser.append(tr("Point        angle     distance  (dE)     (dN)       dE         dN"))
+        self.ui.ResultTextBrowser.append(
+            tr("           correction  fw dist    corrections      Easting    Northing"))
+        self.log.write()
+        self.log.write_log(tr("Traversing") + " - %s" % traversing_type)
+        self.log.write(tr("            bearing    bw dist"))
+        self.log.write(tr("Point        angle     distance  (dE)     (dN)       dE         dN"))
+        self.log.write(tr("           correction  fw dist    corrections      Easting    Northing"))
+        self.ui.ResultTextBrowser.append(ResultLog.resultlog_message)
+        self.log.write(ResultLog.resultlog_message)
 
     def onResetButton(self):
         """ Reset dialog when the Reset button pushed.

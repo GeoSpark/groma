@@ -43,10 +43,12 @@ class ResultLog(object):
         """
         self.write_log(msg)
 
-    def write_log(self, msg):
+    def write_log(self, msg, level=Qgis.Info):
         """ Write log message with date & time
 
+            :param level: Log level
+            :type level: QGIS-flavoured level
             :param msg: message to write
         """
         logging.info(msg)
-        QgsMessageLog.logMessage(msg, 'SurveyingCalculation', level=Qgis.Info)
+        QgsMessageLog.logMessage(msg, 'SurveyingCalculation', level=level)

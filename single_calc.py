@@ -2,11 +2,13 @@
 
 # Form implementation generated from reading ui file 'single_calc.ui'
 #
-# Created by: PyQt5 UI code generator 5.10.1
+# Created by: PyQt5 UI code generator 5.14.1
 #
 # WARNING! All changes made in this file will be lost!
 
+
 from PyQt5 import QtCore, QtGui, QtWidgets
+
 
 class Ui_SingleCalcDialog(object):
     def setupUi(self, SingleCalcDialog):
@@ -22,6 +24,9 @@ class Ui_SingleCalcDialog(object):
         SingleCalcDialog.setSizeGripEnabled(False)
         self.verticalLayout_6 = QtWidgets.QVBoxLayout(SingleCalcDialog)
         self.verticalLayout_6.setObjectName("verticalLayout_6")
+        self.MessageBar = QtWidgets.QWidget(SingleCalcDialog)
+        self.MessageBar.setObjectName("MessageBar")
+        self.verticalLayout_6.addWidget(self.MessageBar)
         self.horizontalLayout_3 = QtWidgets.QHBoxLayout()
         self.horizontalLayout_3.setObjectName("horizontalLayout_3")
         self.RadioGroup = QtWidgets.QGroupBox(SingleCalcDialog)
@@ -309,8 +314,8 @@ class Ui_SingleCalcDialog(object):
         self.ResectionRadio.setText(_translate("SingleCalcDialog", "Resection"))
         self.FreeRadio.setText(_translate("SingleCalcDialog", "Free Station"))
         self.StationGroup.setTitle(_translate("SingleCalcDialog", "Station"))
-        self.Station1Label.setText(_translate("SingleCalcDialog", "Station (1)"))
-        self.Station2Label.setText(_translate("SingleCalcDialog", "Station (2)"))
+        self.Station1Label.setText(_translate("SingleCalcDialog", "Station 1"))
+        self.Station2Label.setText(_translate("SingleCalcDialog", "Station 2"))
         self.PointsGroup.setTitle(_translate("SingleCalcDialog", "Points"))
         self.TargetPointsLabel.setText(_translate("SingleCalcDialog", "Target Points"))
         self.AddButton.setText(_translate("SingleCalcDialog", "Add >"))
@@ -323,14 +328,3 @@ class Ui_SingleCalcDialog(object):
         self.CalcButton.setText(_translate("SingleCalcDialog", "Calculate"))
         self.ResetButton.setText(_translate("SingleCalcDialog", "Reset"))
         self.CloseButton.setText(_translate("SingleCalcDialog", "Close"))
-
-
-if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    SingleCalcDialog = QtWidgets.QDialog()
-    ui = Ui_SingleCalcDialog()
-    ui.setupUi(SingleCalcDialog)
-    SingleCalcDialog.show()
-    sys.exit(app.exec_())
-

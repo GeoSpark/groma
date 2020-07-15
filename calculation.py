@@ -8,12 +8,10 @@
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 
 """
-from qgis.core import QgsMessageLog, Qgis
-from qgis.utils import iface
-
 from ls import config
 from ls.base_classes import *
 from ls.resultlog import *
+from ls.exceptions import CalculationError
 
 
 class Calculation(object):
@@ -204,7 +202,7 @@ class Calculation(object):
             raise e
 
     @staticmethod
-    def traverse(trav_obs, forceFree=False):
+    def traverse(trav_obs, force_free=False):
         """ Calculate traverse line. This method can compute the following types of travesres
 
             1. open traverse (free): originates at a known position with known bearings and ends at an unknown position
@@ -217,59 +215,59 @@ class Calculation(object):
              have coordinates in case of type 2-4.  Two observations are needed at the angle points. At the start point
              the second observation is required in case of type 1-3. At the end point the first observation is required
              in case of type 3.
-            :param forceFree: force free traverse calculation (Boole)
+            :param force_free: force free traverse calculation (Boole)
             :returns: a list of points which's coordinates has been computed.
         """
         ResultLog.resultlog_message = ""
         n = len(trav_obs)
-        # at least 3 points must be
+
         if n < 3:
-            ResultLog.resultlog_message += \
-                tr("Error: At least 3 points must be added to traverse line!") + "\n"
-            return None
+            raise CalculationError('At least 3 points must be added to traverse line')
+
         # start point and end point
         startp = trav_obs[0][0]
         endp = trav_obs[n - 1][0]
         # no coord for startpoint
         if startp is None or startp.p is None or startp.p.e is None or startp.p.n is None:
-            ResultLog.resultlog_message += \
-                tr("Error: No coordinates on start point!") + "\n"
-            return None
+            raise CalculationError('No coordinates on start point')
 
-        free = False
-        if forceFree is True:
+        free_traverse = False
+        if force_free:
             # force to calculate free traverse (for node)
-            free = True
+            free_traverse = True
             endp.p.e = None
             endp.p.n = None
         elif endp is None or endp.p is None or endp.p.e is None or endp.p.n is None:
             # no coordinate for endpoint
             ResultLog.resultlog_message += \
                 tr("Warning: No coordinates for end point -> Free traverse.") + "\n"
-            free = True  # free traverse
+            free_traverse = True
 
         # collect measurements in traverse
         beta = []
-        t = [None] * n
-        t1 = [None] * n
-        t2 = [None] * n
+        t = []
+        t1 = []
+        t2 = []
 
         for i in range(0, n):
             st = trav_obs[i][0]
             obsprev = trav_obs[i][1]
             obsnext = trav_obs[i][2]
             beta.append(st.o.hz)
+            t1.append(None)
+            t2.append(None)
 
             if i == 0:
+                t.append(None)
+
                 if beta[0] is None:
                     # no orientation on start
-                    if free is True:
-                        ResultLog.resultlog_message += \
-                            tr('Error: No orientation on start point and no coordinates on end point!') + '\n'
-                        return None
+                    if free_traverse is True:
+                        raise CalculationError('No orientation on start point and no coordinates on end point')
                     else:
                         ResultLog.resultlog_message += \
-                            tr('Warning: No orientation on start point - inserted traverse.') + '\n'
+                            tr("Warning: No orientation on start point - inserted traverse.") + "\n"
+
                 # there was orientation on first
                 if beta[0] is not None and obsnext is not None and obsnext.hz is not None:
                     beta[0].set_angle(beta[0].get_angle() + obsnext.hz.get_angle())
@@ -278,18 +276,17 @@ class Calculation(object):
             elif i == n - 1:
                 if beta[i] is None:
                     # no orientation on end
-                    ResultLog.resultlog_message += tr('Warning: No orientation on end point.') + '\n'
-                    if beta[i] is not None and beta[0] is not None and obsprev is not None and obsprev.hz is not None:
-                        # there was orientation on last and first
-                        beta[i].set_angle(math.pi * 2 - (beta[i].get_angle() + obsprev.hz.get_angle()))
-                    else:
-                        beta[i] = None
+                    ResultLog.resultlog_message += \
+                        tr("Warning: No orientation on end point.") + "\n"
+
+                if beta[i] is not None and beta[0] is not None and obsprev is not None and obsprev.hz is not None:
+                    # there was orientation on last and first
+                    beta[i].set_angle(math.pi * 2 - (beta[i].get_angle() + obsprev.hz.get_angle()))
+                else:
+                    beta[i] = None
             else:
                 if obsprev is None or obsnext is None or obsprev.hz is None or obsnext.hz is None:
-                    # no angle at angle point
-                    ResultLog.resultlog_message += \
-                        tr('Error: No angle at point %s!') % trav_obs[i][0].p.id + '\n'
-                    return None
+                    raise CalculationError(f'No angle at point {trav_obs[i][0].p.id}')
 
                 beta[i] = Angle(obsnext.hz.get_angle() - obsprev.hz.get_angle())
 
@@ -306,18 +303,15 @@ class Calculation(object):
                     t2[i] = t[i]
                     t[i] = Distance((t[i].d + obsprev.horiz_dist()) / 2.0, "HD")
                 else:
-                    t[i] = Distance(obsprev.horiz_dist(), "HD")
+                    t.append(Distance(obsprev.horiz_dist(), "HD"))
             elif i > 0 and t[i] is None:
-                # no distance between points
-                ResultLog.resultlog_message += \
-                    tr("Error: No distance between points %s and %s!") % \
-                    (trav_obs[i - 1][0].p.id, trav_obs[i][0].p.id) + "\n"
-                return None
+                raise CalculationError(f'No distance between points {trav_obs[i - 1][0].p.id}'
+                                       f' and {trav_obs[i][0].p.id}')
 
             if obsnext is not None and obsnext.d is not None:
-                t[i + 1] = Distance(obsnext.horiz_dist(), "HD")
+                t.append(Distance(obsnext.horiz_dist(), "HD"))
 
-        if forceFree is True:
+        if force_free:
             beta[n - 1] = None
 
         # calculate sum of betas if we have both orientation
@@ -386,12 +380,16 @@ class Calculation(object):
             sumt = sumt + t[i].d
 
         #    calculate de & dn error
-        if free is True:
+        if free_traverse is True:
             dde = 0  # free traverse
             ddn = 0
             ddist = 0
         else:
             dde = endp.p.e - startp.p.e - sumde
+            # PyCharm flags the first subtraction as operating on a None type. While this code *could* produce that
+            # result, I think in the real world it'll never happen. But if you're reading this after an exception,
+            # then you know why. I really feel like rewriting this entire thing because spaghetti don't come close.
+            # noinspection PyUnresolvedReferences
             ddn = endp.p.n - startp.p.n - sumdn
             ddist = math.hypot(dde, ddn)  # linear error
 
@@ -437,7 +435,7 @@ class Calculation(object):
                                                     beta[i].get_angle(ANGLE_UNITS_DISP[config.angle_displayed]))
 
             if i > 0:
-                if free is True:
+                if free_traverse is True:
                     w1 = "-"
                     w2 = "-"
                 else:
@@ -464,7 +462,7 @@ class Calculation(object):
                                            ("", ee[n - 1] - ee[0], nn[n - 1] - nn[0])
             ResultLog.resultlog_message += "           %10s %8.3f %8.3f %8.3f\n\n" % \
                                            ("", sumt, sumde, sumdn)
-            if not free:
+            if not free_traverse:
                 ResultLog.resultlog_message += "           %10s          %8.3f %8.3f\n" % ("", dde, ddn)
         else:
             ResultLog.resultlog_message += "           %-14s                            %10.3f %10.3f\n" % \
@@ -476,10 +474,10 @@ class Calculation(object):
                                            ((n - 1) * 200)
             ResultLog.resultlog_message += "           %10.4f          %8.3f %8.3f\n" % \
                                            (dbeta * 200 / math.pi, dde, ddn)
-        if not free:
+        if not free_traverse:
             ResultLog.resultlog_message += "                                   %8.3f\n" % ddist
 
-        if free is True:
+        if free_traverse is True:
             last = n
         else:
             last = n - 1

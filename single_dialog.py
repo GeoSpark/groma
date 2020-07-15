@@ -13,9 +13,8 @@ import webbrowser
 
 from qgis.PyQt.QtCore import Qt
 from qgis.PyQt.QtGui import QFont, QStandardItem
-from qgis.PyQt.QtWidgets import QDialog, QListWidgetItem
-
-from qgis.utils import iface
+from qgis.PyQt.QtWidgets import QDialog, QListWidgetItem, QSizePolicy
+from qgis.gui import QgsMessageBar
 
 from .prettytable.prettytable import PrettyTable
 from .calculation import Calculation
@@ -34,6 +33,9 @@ class SingleDialog(QDialog):
         super(SingleDialog, self).__init__(flags=Qt.Dialog)
         self.ui = Ui_SingleCalcDialog()
         self.ui.setupUi(self)
+        self.ui.MessageBar = QgsMessageBar()
+        self.ui.MessageBar.setSizePolicy(QSizePolicy.Minimum, QSizePolicy.Fixed)
+        self.ui.verticalLayout_6.insertWidget(0, self.ui.MessageBar, 0)
         self.log = log
 
         # event handlers
@@ -244,25 +246,25 @@ class SingleDialog(QDialog):
         """
         # TODO: Disable the calculate button until we have a valid set up.
         if self.ui.radioButtonGroup.checkedId() == -1:
-            iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr('Select the type of calculation!'),
+            self.ui.MessageBar.pushMessage(tr('SurveyingCalculation'), tr('Select the type of calculation'),
                                            level=Qgis.Critical)
             return
 
         # get the selected stations
         stn1 = self.ui.Station1Combo.itemData(self.ui.Station1Combo.currentIndex())
         if stn1 is None:
-            iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr('Select station point 1!'),
+            self.ui.MessageBar.pushMessage(tr('SurveyingCalculation'), tr('Select station point 1'),
                                            level=Qgis.Critical)
             self.ui.Station1Combo.setFocus()
             return
         stn2 = self.ui.Station2Combo.itemData(self.ui.Station2Combo.currentIndex())
         if stn2 is None and self.ui.IntersectRadio.isChecked():
-            iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr('Select station point 2!'),
+            self.ui.MessageBar.pushMessage(tr('SurveyingCalculation'), tr('Select station point 2'),
                                            level=Qgis.Critical)
             self.ui.Station2Combo.setFocus()
             return
         if self.ui.TargetList.count() == 0:
-            iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr('Add points to Used Points list!'),
+            self.ui.MessageBar.pushMessage(tr('SurveyingCalculation'), tr('Add points to Used Points list'),
                                            level=Qgis.Critical)
             self.ui.TargetList.setFocus()
             return
@@ -280,7 +282,7 @@ class SingleDialog(QDialog):
             try:
                 z, rows = Calculation.orientation(s, ref_list)
             except (ValueError, TypeError, AttributeError) as e:
-                iface.messageBar().pushMessage(tr('SurveyingCalculation'), str(e), level=Qgis.Critical)
+                self.ui.MessageBar.pushMessage(tr('SurveyingCalculation'), str(e), level=Qgis.Critical)
                 return
 
             ang_err_label = 'Ang err'
@@ -350,7 +352,7 @@ class SingleDialog(QDialog):
                     else:
                         tp.store_coord(3)
                 else:
-                    iface.messageBar().pushMessage(tr('SurveyingCalculation'),
+                    self.ui.MessageBar.pushMessage(tr('SurveyingCalculation'),
                                                    tr('Radial survey on %s cannot be calculated!') % targetp[0],
                                                    level=Qgis.Critical)
 
@@ -365,7 +367,7 @@ class SingleDialog(QDialog):
             s1 = get_station(stn1[0], stn1[1], stn1[2])
             s2 = get_station(stn2[0], stn2[1], stn2[2])
             if stn1 == stn2:
-                iface.messageBar().pushMessage(tr('SurveyingCalculation'), tr('Station 1 and station 2 are the same!'),
+                self.ui.MessageBar.pushMessage(tr('SurveyingCalculation'), tr('Station 1 and station 2 are the same!'),
                                                level=Qgis.Critical)
                 self.ui.Station1Combo.setFocus()
                 return
@@ -397,7 +399,7 @@ class SingleDialog(QDialog):
                     tp1.store_coord(2)
                     x.add_row(row)
                 else:
-                    iface.messageBar().pushMessage(tr('SurveyingCalculation'),
+                    self.ui.MessageBar.pushMessage(tr('SurveyingCalculation'),
                                                    tr('Intersecion on %s cannot be calculated!') % targetp1[0],
                                                    level=Qgis.Critical)
 
@@ -411,7 +413,7 @@ class SingleDialog(QDialog):
             # resection
             s = get_station(stn1[0], stn1[1], stn1[2])
             if self.ui.TargetList.count() != 3:
-                iface.messageBar().pushMessage(tr('SurveyingCalculation'),
+                self.ui.MessageBar.pushMessage(tr('SurveyingCalculation'),
                                                tr('Select exactly 3 used points for resection!'), level=Qgis.Critical)
                 self.ui.TargetList.setFocus()
                 return
