@@ -74,6 +74,7 @@ class SurveyingCalculation(object):
 
         config.load_config()
 
+        # noinspection PyTypeChecker
         QgsMessageLog.logMessage('Plugin initialised', 'SurveyingCalculation', level=Qgis.Info)
 
     def add_action(self, icon_path, text, callback, enabled_flag=True,

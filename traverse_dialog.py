@@ -15,11 +15,11 @@ from qgis.PyQt.QtWidgets import QDialog, QListWidgetItem, QMessageBox, QSizePoli
 from qgis.gui import QgsMessageBar
 from qgis.utils import iface
 
-from ls.exceptions import CalculationError
-from ls.calculation import Calculation
-from ls.resultlog import *
-from ls.surveying_util import *
-from ls.traverse_calc import Ui_TraverseCalcDialog
+from .exceptions import CalculationError
+from .calculation import Calculation
+from .resultlog import *
+from .surveying_util import *
+from .traverse_calc import Ui_TraverseCalcDialog
 
 
 class TraverseDialog(QDialog):

@@ -7,7 +7,7 @@
 # This file should be included when you package your plugin.# Mandatory items:
 
 [general]
-name=SurveyingCalculation
+name=Groma
 about=Extend QGIS functionality to make land surveying calculations as traversing, resection, free station, network adjustment and area division and print by templates.
 qgisMinimumVersion=3.0
 description=To solve surveying calculations
@@ -23,11 +23,11 @@ email=mail@digikom.hu
 # changelog=
 
 # Tags are comma separated with spaces allowed
-tags=Surveyor Calculation
+tags=Surveyor Calculation,total station
 
-homepage=https://github.com/zsiki/ls
-tracker=https://github.com/zsiki/ls
-repository=https://github.com/zsiki/ls
+homepage=https://github.com/GeoSpark/groma
+tracker=https://github.com/GeoSpark/groma
+repository=https://github.com/GeoSpark/groma
 icon=icon.png
 # experimental flag
 experimental=False

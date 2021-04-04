@@ -8,10 +8,10 @@
 .. moduleauthor::Zoltan Siki <siki@agt.bme.hu>
 
 """
-from ls import config
-from ls.base_classes import *
-from ls.resultlog import *
-from ls.exceptions import CalculationError
+from . import config
+from .base_classes import *
+from .resultlog import *
+from .exceptions import CalculationError
 
 
 class Calculation(object):

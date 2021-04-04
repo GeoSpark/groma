@@ -2,8 +2,8 @@
 #
 # Released under the MIT License (MIT)
 # See the LICENSE file, or visit http://opensource.org/licenses/MIT
-from ls.base_classes import Point, compare, Distance, Angle, PolarObservation, Station
-from calculation import Calculation, distance2d, distance3d, bearing
+from groma.base_classes import Point, compare, Distance, Angle, PolarObservation, Station
+from groma.calculation import Calculation, distance2d, distance3d, bearing
 
 import pytest
 

@@ -2,7 +2,7 @@
 #
 # Released under the MIT License (MIT)
 # See the LICENSE file, or visit http://opensource.org/licenses/MIT
-from base_classes import Point, compare, Angle, Circle, PolarObservation, Distance
+from groma.base_classes import Point, compare, Angle, Circle, PolarObservation, Distance
 
 
 def test_compare():

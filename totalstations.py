@@ -12,8 +12,8 @@ import re
 
 # noinspection PyUnresolvedReferences
 from qgis.core import QgsMessageLog, Qgis
-from ls import config
-from ls.base_classes import Angle, FOOT2M, ANGLE_UNITS_STORE
+from . import config
+from .base_classes import Angle, FOOT2M, ANGLE_UNITS_STORE
 
 
 class TotalStation(object):
